@@ -11,5 +11,9 @@
   "scripts": {
     "build": "cocos build --platform wechatgame",
     "preview": "cocos run --platform web"
+  },
+  "wechatgame": {
+    "appid": "wx8e1435739bbdf94d",
+    "orientation": "portrait"
   }
 }

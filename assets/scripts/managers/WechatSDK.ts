@@ -15,14 +15,30 @@ export class WechatSDK extends Component {
         return WechatSDK._instance;
     }
     
+    // 小程序AppID
+    public static readonly APPID: string = 'wx8e1435739bbdf94d';
+    
+    // 云开发环境ID（需要替换为实际的）
+    public static readonly CLOUD_ENV: string = 'your-cloud-env-id';
+    
+    // 广告单元ID（需要替换为实际的）
+    public static readonly AD_REWARDED: string = 'adunit-rewarded-video-id';
+    public static readonly AD_BANNER: string = 'adunit-banner-id';
+    
     // 用户信息
     private userInfo: any = null;
     
     // 登录凭证
     private code: string = '';
     
+    // OpenID
+    private openid: string = '';
+    
     // 是否初始化成功
     private isInited: boolean = false;
+    
+    // 云开发是否初始化
+    private isCloudInited: boolean = false;
     
     onLoad() {
         if (WechatSDK._instance === null) {
@@ -41,6 +57,9 @@ export class WechatSDK extends Component {
             return;
         }
         
+        // 初始化云开发
+        this.initCloud();
+        
         // 展示分享菜单
         this.showShareMenu();
         
@@ -51,7 +70,55 @@ export class WechatSDK extends Component {
         this.onShowHide();
         
         this.isInited = true;
-        console.log('微信SDK初始化成功');
+        console.log('微信SDK初始化成功，AppID:', WechatSDK.APPID);
+    }
+    
+    /**
+     * 初始化云开发
+     */
+    private initCloud(): void {
+        if (typeof wx === 'undefined') return;
+        
+        try {
+            wx.cloud.init({
+                env: WechatSDK.CLOUD_ENV,
+                traceUser: true
+            });
+            this.isCloudInited = true;
+            console.log('云开发初始化成功');
+        } catch (err) {
+            console.error('云开发初始化失败:', err);
+        }
+    }
+    
+    /**
+     * 调用云函数
+     */
+    async callCloudFunction(name: string, data?: any): Promise<any> {
+        if (typeof wx === 'undefined' || !this.isCloudInited) {
+            throw new Error('云开发未初始化');
+        }
+        
+        try {
+            const res = await wx.cloud.callFunction({
+                name: name,
+                data: data
+            });
+            return res.result;
+        } catch (err) {
+            console.error('云函数调用失败:', err);
+            throw err;
+        }
+    }
+    
+    /**
+     * 获取数据库引用
+     */
+    getDatabase(): any {
+        if (typeof wx === 'undefined' || !this.isCloudInited) {
+            return null;
+        }
+        return wx.cloud.database();
     }
     
     // ==================== 登录相关 ====================
@@ -199,11 +266,11 @@ export class WechatSDK extends Component {
     /**
      * 创建激励视频广告
      */
-    createRewardedVideoAd(adUnitId: string): any {
+    createRewardedVideoAd(adUnitId?: string): any {
         if (typeof wx === 'undefined') return null;
         
         const rewardedVideoAd = wx.createRewardedVideoAd({
-            adUnitId: adUnitId
+            adUnitId: adUnitId || WechatSDK.AD_REWARDED
         });
         
         rewardedVideoAd.onLoad(() => {
@@ -257,11 +324,11 @@ export class WechatSDK extends Component {
     /**
      * 创建Banner广告
      */
-    createBannerAd(adUnitId: string): any {
+    createBannerAd(adUnitId?: string): any {
         if (typeof wx === 'undefined') return null;
         
         const bannerAd = wx.createBannerAd({
-            adUnitId: adUnitId,
+            adUnitId: adUnitId || WechatSDK.AD_BANNER,
             style: {
                 left: 0,
                 top: 0,
