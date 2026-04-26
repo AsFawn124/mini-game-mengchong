@@ -1,4 +1,6 @@
 const mysql = require('mysql2/promise');
+const fs = require('fs');
+const path = require('path');
 
 // 阿里云RDS MySQL配置
 const dbConfig = {
@@ -9,7 +11,9 @@ const dbConfig = {
     port: process.env.DB_PORT || 3306,
     waitForConnections: true,
     connectionLimit: 10,
-    queueLimit: 0
+    queueLimit: 0,
+    enableKeepAlive: true,
+    keepAliveInitialDelay: 10000
 };
 
 // 创建连接池
@@ -19,101 +23,85 @@ const pool = mysql.createPool(dbConfig);
 async function testConnection() {
     try {
         const connection = await pool.getConnection();
-        console.log('数据库连接成功');
+        console.log('✅ 数据库连接成功');
         connection.release();
+        return true;
     } catch (error) {
-        console.error('数据库连接失败:', error);
+        console.error('❌ 数据库连接失败:', error.message);
+        return false;
     }
 }
 
 // 初始化数据库表
 async function initDatabase() {
     try {
+        // 读取SQL文件
+        const schemaPath = path.join(__dirname, '../database/schema.sql');
+        if (!fs.existsSync(schemaPath)) {
+            console.log('⚠️ 未找到schema.sql文件，跳过初始化');
+            return;
+        }
+        
+        const schemaSQL = fs.readFileSync(schemaPath, 'utf8');
+        
+        // 分割SQL语句
+        const statements = schemaSQL
+            .split(';')
+            .map(s => s.trim())
+            .filter(s => s.length > 0);
+        
         const connection = await pool.getConnection();
         
-        // 用户表
-        await connection.execute(`
-            CREATE TABLE IF NOT EXISTS users (
-                id INT AUTO_INCREMENT PRIMARY KEY,
-                openid VARCHAR(100) UNIQUE NOT NULL,
-                nickname VARCHAR(100),
-                avatar VARCHAR(500),
-                diamonds INT DEFAULT 300,
-                gold INT DEFAULT 0,
-                energy INT DEFAULT 50,
-                best_score INT DEFAULT 0,
-                best_wave INT DEFAULT 0,
-                total_games INT DEFAULT 0,
-                create_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                update_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-                INDEX idx_openid (openid),
-                INDEX idx_best_score (best_score)
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
-        `);
-        
-        // 萌宠表
-        await connection.execute(`
-            CREATE TABLE IF NOT EXISTS user_pets (
-                id INT AUTO_INCREMENT PRIMARY KEY,
-                openid VARCHAR(100) NOT NULL,
-                pet_id VARCHAR(50) NOT NULL,
-                level INT DEFAULT 1,
-                exp INT DEFAULT 0,
-                is_battle TINYINT DEFAULT 0,
-                obtain_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                UNIQUE KEY unique_user_pet (openid, pet_id),
-                FOREIGN KEY (openid) REFERENCES users(openid) ON DELETE CASCADE
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
-        `);
-        
-        // 排行榜表
-        await connection.execute(`
-            CREATE TABLE IF NOT EXISTS leaderboard (
-                id INT AUTO_INCREMENT PRIMARY KEY,
-                openid VARCHAR(100) NOT NULL,
-                score INT NOT NULL,
-                wave INT NOT NULL,
-                game_data JSON,
-                create_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                INDEX idx_score (score DESC),
-                FOREIGN KEY (openid) REFERENCES users(openid) ON DELETE CASCADE
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
-        `);
-        
-        // 抽卡记录表
-        await connection.execute(`
-            CREATE TABLE IF NOT EXISTS gacha_logs (
-                id INT AUTO_INCREMENT PRIMARY KEY,
-                openid VARCHAR(100) NOT NULL,
-                pet_id VARCHAR(50) NOT NULL,
-                rarity VARCHAR(10) NOT NULL,
-                is_ten_draw TINYINT DEFAULT 0,
-                create_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                FOREIGN KEY (openid) REFERENCES users(openid) ON DELETE CASCADE
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
-        `);
-        
-        // 游戏日志表
-        await connection.execute(`
-            CREATE TABLE IF NOT EXISTS game_logs (
-                id INT AUTO_INCREMENT PRIMARY KEY,
-                openid VARCHAR(100) NOT NULL,
-                event VARCHAR(50) NOT NULL,
-                data JSON,
-                create_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                INDEX idx_openid_time (openid, create_time)
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
-        `);
+        for (const statement of statements) {
+            try {
+                await connection.execute(statement);
+            } catch (err) {
+                // 忽略已存在的错误
+                if (err.code !== 'ER_TABLE_EXISTS_ERROR' && 
+                    err.code !== 'ER_DUP_ENTRY') {
+                    console.error('执行SQL失败:', err.message);
+                }
+            }
+        }
         
         connection.release();
-        console.log('数据库表初始化完成');
+        console.log('✅ 数据库表初始化完成');
     } catch (error) {
-        console.error('数据库初始化失败:', error);
+        console.error('❌ 数据库初始化失败:', error);
+    }
+}
+
+// 执行查询
+async function query(sql, params) {
+    try {
+        const [rows] = await pool.execute(sql, params);
+        return rows;
+    } catch (error) {
+        console.error('查询失败:', error);
+        throw error;
+    }
+}
+
+// 执行事务
+async function transaction(callback) {
+    const connection = await pool.getConnection();
+    try {
+        await connection.beginTransaction();
+        const result = await callback(connection);
+        await connection.commit();
+        return result;
+    } catch (error) {
+        await connection.rollback();
+        throw error;
+    } finally {
+        connection.release();
     }
 }
 
 module.exports = {
     pool,
     testConnection,
-    initDatabase
+    initDatabase,
+    query,
+    transaction
 };
