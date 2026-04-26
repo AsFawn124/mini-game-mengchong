@@ -1,0 +1,44 @@
+name: Deploy WeChat Mini Game
+
+on:
+  push:
+    branches: [ master, main ]
+  pull_request:
+    branches: [ master, main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+        
+    - name: Install Cocos Creator
+      run: |
+        # 下载并安装 Cocos Creator 3.8.0
+        echo "Installing Cocos Creator..."
+        
+    - name: Build WeChat Game
+      run: |
+        # 构建微信小游戏
+        echo "Building WeChat Mini Game..."
+        # cocos build --platform wechatgame --buildPath build/wechatgame
+        
+    - name: Upload to WeChat
+      env:
+        APPID: wx8e1435739bbdf94d
+        PRIVATE_KEY: ${{ secrets.WECHAT_PRIVATE_KEY }}
+      run: |
+        # 使用 miniprogram-ci 上传
+        echo "Uploading to WeChat..."
+        # npx miniprogram-ci upload \
+        #   --appid $APPID \
+        #   --version ${{ github.run_number }} \
+        #   --desc "Auto deploy from GitHub Actions" \
+        #   --project-path build/wechatgame \
+        #   --private-key-path <(echo "$PRIVATE_KEY")
