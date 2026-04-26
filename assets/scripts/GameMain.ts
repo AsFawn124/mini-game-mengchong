@@ -1,6 +1,10 @@
 import { _decorator, Component, Node, Label, Button, director } from 'cc';
 import { PetManager } from './managers/PetManager';
 import { BattleManager } from './managers/BattleManager';
+import { RankManager } from './managers/RankManager';
+import { FriendManager } from './managers/FriendManager';
+import { ShopManager } from './managers/ShopManager';
+import { BattlePassManager } from './managers/BattlePassManager';
 import { GameConfig } from './config/GameConfig';
 
 const { ccclass, property } = _decorator;
@@ -27,6 +31,15 @@ export class GameMain extends Component {
     
     @property(Button)
     bagButton: Button = null;        // 背包按钮
+    
+    @property(Button)
+    rankButton: Button = null;       // 排行榜按钮
+    
+    @property(Button)
+    shopButton: Button = null;       // 商城按钮
+    
+    @property(Button)
+    battlePassButton: Button = null; // 战令按钮
     
     // 玩家数据
     private playerData = {
@@ -69,6 +82,18 @@ export class GameMain extends Component {
         if (!this.getComponent(BattleManager)) {
             this.addComponent(BattleManager);
         }
+        if (!this.getComponent(RankManager)) {
+            this.addComponent(RankManager);
+        }
+        if (!this.getComponent(FriendManager)) {
+            this.addComponent(FriendManager);
+        }
+        if (!this.getComponent(ShopManager)) {
+            this.addComponent(ShopManager);
+        }
+        if (!this.getComponent(BattlePassManager)) {
+            this.addComponent(BattlePassManager);
+        }
     }
     
     /**
@@ -83,6 +108,15 @@ export class GameMain extends Component {
         }
         if (this.bagButton) {
             this.bagButton.node.on(Button.EventType.CLICK, this.onBagClick, this);
+        }
+        if (this.rankButton) {
+            this.rankButton.node.on(Button.EventType.CLICK, this.onRankClick, this);
+        }
+        if (this.shopButton) {
+            this.shopButton.node.on(Button.EventType.CLICK, this.onShopClick, this);
+        }
+        if (this.battlePassButton) {
+            this.battlePassButton.node.on(Button.EventType.CLICK, this.onBattlePassClick, this);
         }
     }
     
@@ -128,6 +162,27 @@ export class GameMain extends Component {
     private onBagClick(): void {
         // 跳转到背包场景
         director.loadScene('BagScene');
+    }
+    
+    /**
+     * 排行榜按钮点击
+     */
+    private onRankClick(): void {
+        director.loadScene('RankScene');
+    }
+    
+    /**
+     * 商城按钮点击
+     */
+    private onShopClick(): void {
+        director.loadScene('ShopScene');
+    }
+    
+    /**
+     * 战令按钮点击
+     */
+    private onBattlePassClick(): void {
+        director.loadScene('BattlePassScene');
     }
     
     /**
