@@ -1,0 +1,73 @@
+{
+  "pets": {
+    "n": [
+      {"id": "n001", "name": "小火苗", "element": "fire", "prompt": "A cute fire element pet, small flame spirit, chibi style, big sparkling eyes, fluffy, orange and red color, simple design, common quality, game character design, white background, 2D game art, high quality, 4k, digital art, kawaii style"},
+      {"id": "n002", "name": "水滴仔", "element": "water", "prompt": "A cute water element pet, cute water droplet creature, chibi style, big sparkling eyes, transparent blue body, simple design, common quality, game character design, white background, 2D game art, high quality, 4k, digital art, kawaii style"},
+      {"id": "n003", "name": "绿叶怪", "element": "grass", "prompt": "A cute grass element pet, small leaf creature, chibi style, big sparkling eyes, green color, simple design, common quality, game character design, white background, 2D game art, high quality, 4k, digital art, kawaii style"},
+      {"id": "n004", "name": "闪电鼠", "element": "fire", "prompt": "A cute fire element pet, cute mouse with lightning, chibi style, big sparkling eyes, yellow color, simple design, common quality, game character design, white background, 2D game art, high quality, 4k, digital art, kawaii style"},
+      {"id": "n005", "name": "泡泡鱼", "element": "water", "prompt": "A cute water element pet, cute bubble fish, chibi style, big sparkling eyes, cyan color, simple design, common quality, game character design, white background, 2D game art, high quality, 4k, digital art, kawaii style"},
+      {"id": "n006", "name": "岩石怪", "element": "grass", "prompt": "A cute grass element pet, small rock creature, chibi style, big sparkling eyes, brown color, simple design, common quality, game character design, white background, 2D game art, high quality, 4k, digital art, kawaii style"},
+      {"id": "n007", "name": "风精灵", "element": "grass", "prompt": "A cute grass element pet, tiny wind fairy, chibi style, big sparkling eyes, light blue color, simple design, common quality, game character design, white background, 2D game art, high quality, 4k, digital art, kawaii style"},
+      {"id": "n008", "name": "火苗兔", "element": "fire", "prompt": "A cute fire element pet, cute rabbit with flame ears, chibi style, big sparkling eyes, orange color, simple design, common quality, game character design, white background, 2D game art, high quality, 4k, digital art, kawaii style"},
+      {"id": "n009", "name": "水滴蛙", "element": "water", "prompt": "A cute water element pet, cute frog with water drops, chibi style, big sparkling eyes, blue color, simple design, common quality, game character design, white background, 2D game art, high quality, 4k, digital art, kawaii style"},
+      {"id": "n010", "name": "种子怪", "element": "grass", "prompt": "A cute grass element pet, tiny seed creature, chibi style, big sparkling eyes, green color, simple design, common quality, game character design, white background, 2D game art, high quality, 4k, digital art, kawaii style"},
+      {"id": "n011", "name": "火花猫", "element": "fire", "prompt": "A cute fire element pet, small cat with spark, chibi style, big sparkling eyes, red color, simple design, common quality, game character design, white background, 2D game art, high quality, 4k, digital art, kawaii style"},
+      {"id": "n012", "name": "冰晶虫", "element": "water", "prompt": "A cute water element pet, cute ice crystal bug, chibi style, big sparkling eyes, light blue color, simple design, common quality, game character design, white background, 2D game art, high quality, 4k, digital art, kawaii style"},
+      {"id": "n013", "name": "藤蔓蛇", "element": "grass", "prompt": "A cute grass element pet, cute vine snake, chibi style, big sparkling eyes, green color, simple design, common quality, game character design, white background, 2D game art, high quality, 4k, digital art, kawaii style"},
+      {"id": "n014", "name": "煤炭球", "element": "fire", "prompt": "A cute fire element pet, round coal creature, chibi style, big sparkling eyes, black color, simple design, common quality, game character design, white background, 2D game art, high quality, 4k, digital art, kawaii style"},
+      {"id": "n015", "name": "露珠蝶", "element": "water", "prompt": "A cute water element pet, cute butterfly with dew, chibi style, big sparkling eyes, blue color, simple design, common quality, game character design, white background, 2D game art, high quality, 4k, digital art, kawaii style"},
+      {"id": "n016", "name": "蘑菇仔", "element": "grass", "prompt": "A cute grass element pet, small mushroom creature, chibi style, big sparkling eyes, red color, simple design, common quality, game character design, white background, 2D game art, high quality, 4k, digital art, kawaii style"},
+      {"id": "n017", "name": "火苗鸟", "element": "fire", "prompt": "A cute fire element pet, tiny bird with flame wings, chibi style, big sparkling eyes, orange color, simple design, common quality, game character design, white background, 2D game art, high quality, 4k, digital art, kawaii style"},
+      {"id": "n018", "name": "水母仔", "element": "water", "prompt": "A cute water element pet, cute baby jellyfish, chibi style, big sparkling eyes, pink color, simple design, common quality, game character design, white background, 2D game art, high quality, 4k, digital art, kawaii style"},
+      {"id": "n019", "name": "花瓣精", "element": "grass", "prompt": "A cute grass element pet, tiny flower petal fairy, chibi style, big sparkling eyes, pink color, simple design, common quality, game character design, white background, 2D game art, high quality, 4k, digital art, kawaii style"},
+      {"id": "n020", "name": "火星虫", "element": "fire", "prompt": "A cute fire element pet, cute firefly, chibi style, big sparkling eyes, orange color, simple design, common quality, game character design, white background, 2D game art, high quality, 4k, digital art, kawaii style"}
+    ],
+    "r": [
+      {"id": "r001", "name": "火焰喵", "element": "fire", "prompt": "A cute fire element pet, cute fire cat with flame tail, chibi style, big sparkling eyes, fluffy, red and orange color, detailed design, rare quality, glowing effects, game character design, white background, 2D game art, high quality, 4k, digital art, kawaii style"},
+      {"id": "r002", "name": "冰霜兔", "element": "water", "prompt": "A cute water element pet, cute ice rabbit, chibi style, big sparkling eyes, fluffy, cyan and blue color, detailed design, rare quality, glowing effects, game character design, white background, 2D game art, high quality, 4k, digital art, kawaii style"},
+      {"id": "r003", "name": "雷霆熊", "element": "fire", "prompt": "A cute fire element pet, cute thunder bear, chibi style, big sparkling eyes, fluffy, purple color, detailed design, rare quality, glowing effects, game character design, white background, 2D game art, high quality, 4k, digital art, kawaii style"},
+      {"id": "r004", "name": "治愈狐", "element": "light", "prompt": "A cute light element pet, cute healing fox, chibi style, big sparkling eyes, fluffy, white and gold color, detailed design, rare quality, glowing effects, game character design, white background, 2D game art, high quality, 4k, digital art, kawaii style"},
+      {"id": "r005", "name": "暗影狼", "element": "dark", "prompt": "A cute dark element pet, cute shadow wolf, chibi style, big sparkling eyes, fluffy, dark purple color, detailed design, rare quality, glowing effects, game character design, white background, 2D game art, high quality, 4k, digital art, kawaii style"}
+    ],
+    "sr": [
+      {"id": "sr001", "name": "凤凰", "element": "fire", "prompt": "A majestic fire phoenix pet, chibi style, big sparkling eyes, beautiful feathers, red and gold color, highly detailed, epic quality, magical aura, particle effects, game character design, white background, 2D game art, high quality, 4k, digital art, kawaii style"},
+      {"id": "sr002", "name": "冰龙", "element": "water", "prompt": "A cute water element pet, cute ice dragon, chibi style, big sparkling eyes, beautiful scales, cyan and blue color, highly detailed, epic quality, magical aura, particle effects, game character design, white background, 2D game art, high quality, 4k, digital art, kawaii style"},
+      {"id": "sr003", "name": "雷麒麟", "element": "fire", "prompt": "A cute fire element pet, cute thunder qilin, chibi style, big sparkling eyes, majestic horns, purple and gold color, highly detailed, epic quality, magical aura, particle effects, game character design, white background, 2D game art, high quality, 4k, digital art, kawaii style"}
+    ],
+    "ssr": [
+      {"id": "ssr001", "name": "圣光天使", "element": "light", "prompt": "A beautiful holy angel pet, chibi style, big sparkling eyes, white wings, golden halo, white and gold color, masterpiece quality, legendary, divine aura, spectacular effects, intricate details, game character design, white background, 2D game art, high quality, 4k, digital art, kawaii style"},
+      {"id": "ssr002", "name": "暗黑魔王", "element": "dark", "prompt": "A cool dark demon king pet, chibi style, big sparkling eyes, black wings, red eyes, black and purple color, masterpiece quality, legendary, dark aura, spectacular effects, intricate details, game character design, white background, 2D game art, high quality, 4k, digital art, kawaii style"}
+    ]
+  },
+  "ui": {
+    "buttons": [
+      {"id": "button_normal", "name": "普通按钮", "prompt": "A cute game button, rounded rectangle, pink gradient, soft shadow, 2D game UI asset, white background, high quality, clean design"},
+      {"id": "button_pressed", "name": "按下按钮", "prompt": "A cute game button pressed state, rounded rectangle, darker pink, inset shadow, 2D game UI asset, white background, high quality"},
+      {"id": "button_disabled", "name": "禁用按钮", "prompt": "A cute game button disabled state, rounded rectangle, gray color, flat design, 2D game UI asset, white background, high quality"},
+      {"id": "button_close", "name": "关闭按钮", "prompt": "A cute game close button, X icon, circular, red color, 2D game UI asset, white background, high quality"},
+      {"id": "button_back", "name": "返回按钮", "prompt": "A cute game back button, arrow icon, circular, blue color, 2D game UI asset, white background, high quality"}
+    ],
+    "icons": [
+      {"id": "icon_gold", "name": "金币图标", "prompt": "A cute gold coin icon, shiny, 3D effect, game currency, 2D game UI asset, white background, high quality"},
+      {"id": "icon_diamond", "name": "钻石图标", "prompt": "A cute diamond gem icon, blue crystal, sparkling, game premium currency, 2D game UI asset, white background, high quality"},
+      {"id": "icon_exp", "name": "经验图标", "prompt": "A cute experience star icon, golden star, glowing, game XP, 2D game UI asset, white background, high quality"},
+      {"id": "icon_energy", "name": "体力图标", "prompt": "A cute energy heart icon, red heart, glowing, game energy, 2D game UI asset, white background, high quality"},
+      {"id": "element_fire", "name": "火属性图标", "prompt": "A cute fire element icon, flame symbol, orange and red, game element, 2D game UI asset, white background, high quality"},
+      {"id": "element_water", "name": "水属性图标", "prompt": "A cute water element icon, water drop symbol, blue, game element, 2D game UI asset, white background, high quality"},
+      {"id": "element_grass", "name": "草属性图标", "prompt": "A cute grass element icon, leaf symbol, green, game element, 2D game UI asset, white background, high quality"},
+      {"id": "element_light", "name": "光属性图标", "prompt": "A cute light element icon, sun symbol, golden yellow, game element, 2D game UI asset, white background, high quality"},
+      {"id": "element_dark", "name": "暗属性图标", "prompt": "A cute dark element icon, moon symbol, purple, game element, 2D game UI asset, white background, high quality"},
+      {"id": "rarity_n", "name": "N级边框", "prompt": "A cute game card frame, N rarity, gray border, simple design, 2D game UI asset, white background, high quality"},
+      {"id": "rarity_r", "name": "R级边框", "prompt": "A cute game card frame, R rarity, green border, glowing effect, 2D game UI asset, white background, high quality"},
+      {"id": "rarity_sr", "name": "SR级边框", "prompt": "A cute game card frame, SR rarity, purple border, magical glow, 2D game UI asset, white background, high quality"},
+      {"id": "rarity_ssr", "name": "SSR级边框", "prompt": "A cute game card frame, SSR rarity, golden border, divine glow, spectacular effect, 2D game UI asset, white background, high quality"}
+    ]
+  },
+  "backgrounds": [
+    {"id": "bg_main", "name": "主场景背景", "prompt": "A cute fantasy game main menu background, magical forest, pink and blue sky, fluffy clouds, rainbow, cute creatures in distance, dreamy atmosphere, 2D game art, high quality, vertical composition, no UI elements"},
+    {"id": "bg_battle", "name": "战斗场景背景", "prompt": "A cute fantasy game battle background, magical arena, glowing crystals, elemental effects floating, pink and purple theme, epic but cute atmosphere, 2D game art, high quality, vertical composition, no UI elements"},
+    {"id": "bg_gacha", "name": "抽卡场景背景", "prompt": "A cute fantasy game gacha summon background, magical portal, sparkles and stars, rainbow colors, mysterious but cute atmosphere, 2D game art, high quality, vertical composition, no UI elements"},
+    {"id": "bg_bag", "name": "背包场景背景", "prompt": "A cute fantasy game inventory background, cozy room, shelves with cute items, warm lighting, pink and cream colors, 2D game art, high quality, vertical composition, no UI elements"},
+    {"id": "bg_friend", "name": "好友场景背景", "prompt": "A cute fantasy game social background, magical garden, cute creatures playing together, friendship theme, pink and green colors, 2D game art, high quality, vertical composition, no UI elements"}
+  ]
+}

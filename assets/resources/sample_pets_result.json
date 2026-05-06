@@ -1,0 +1,32 @@
+[
+  {
+    "id": "n001",
+    "name": "小火苗",
+    "error": "command failed",
+    "status": "failed"
+  },
+  {
+    "id": "r001",
+    "name": "火焰喵",
+    "error": "Expecting value: line 1 column 1 (char 0)",
+    "status": "failed"
+  },
+  {
+    "id": "sr001",
+    "name": "凤凰",
+    "error": "Expecting value: line 1 column 1 (char 0)",
+    "status": "failed"
+  },
+  {
+    "id": "ssr001",
+    "name": "圣光天使",
+    "error": "Expecting value: line 1 column 1 (char 0)",
+    "status": "failed"
+  },
+  {
+    "id": "n002",
+    "name": "水滴仔",
+    "error": "Expecting value: line 1 column 1 (char 0)",
+    "status": "failed"
+  }
+]
