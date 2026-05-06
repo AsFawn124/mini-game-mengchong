@@ -1,139 +1,193 @@
-# 萌宠大冒险 - 微信小游戏
+# 🎮 萌宠大冒险 - 微信小游戏
 
-> 一款萌系治愈风格的合成+Roguelike微信小游戏
+[![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)](https://github.com/AsFawn124/mini-game-mengchong)
+[![Platform](https://img.shields.io/badge/platform-微信小游戏-green.svg)](https://developers.weixin.qq.com/minigame/dev/guide/)
+[![Engine](https://img.shields.io/badge/engine-Cocos%20Creator%203.x-orange.svg)](https://www.cocos.com/)
 
-## 🎮 游戏特色
+## 📖 项目简介
 
-- 🐱 **萌系治愈**：50+可爱萌宠，温暖治愈画风
-- ⚔️ **Roguelike玩法**：随机技能Build，每次不同体验
-- 🔄 **合成系统**：拖拽合成，升级进化
-- 🏆 **社交竞技**：好友排行榜、组队挑战
-- 💰 **多元变现**：激励视频、内购、广告
+《萌宠大冒险》是一款萌系治愈风格的微信小游戏，融合了萌宠收集、Roguelike战斗和社交竞技元素。
+
+### 核心玩法
+- 🐱 **萌宠收集**：50+只萌宠等你收集（N/R/SR/SSR）
+- ⚔️ **Roguelike战斗**：自动战斗 + 技能Build
+- 🎲 **抽卡系统**：单抽/十连抽，保底机制
+- 🔥 **属性克制**：火/水/草/光/暗相生相克
+- 👥 **社交竞技**：好友排行榜、组队挑战
 
 ## 🚀 快速开始
 
 ### 环境要求
-- Cocos Creator 3.8+
 - Node.js 16+
+- Cocos Creator 3.x
 - 微信开发者工具
 
-### 安装
+### 安装步骤
+
 ```bash
+# 1. 克隆项目
+git clone https://github.com/AsFawn124/mini-game-mengchong.git
+
+# 2. 进入项目目录
+cd mini-game-mengchong
+
+# 3. 安装依赖
 npm install
+
+# 4. 用Cocos Creator打开项目
+# 选择 "项目" -> "构建发布" -> "微信小游戏"
+
+# 5. 用微信开发者工具导入build目录
 ```
 
-### 开发
-```bash
-npm run preview    # 预览模式
-npm run dev        # 微信小游戏开发
-```
+### 配置
 
-### 构建
-```bash
-npm run build      # 构建微信小游戏
+修改 `src/GameConfig.ts`：
+```typescript
+WECHAT: {
+    APP_ID: '你的小程序AppID',
+    ENV_ID: '你的云开发环境ID'
+}
 ```
 
 ## 📁 项目结构
 
 ```
 mini-game-mengchong/
-├── assets/
-│   ├── scripts/
-│   │   ├── config/          # 配置文件
-│   │   │   └── GameConfig.ts
-│   │   ├── managers/        # 管理器
-│   │   │   ├── PetManager.ts
-│   │   │   ├── BattleManager.ts
-│   │   │   ├── EffectManager.ts
-│   │   │   └── AudioManager.ts
-│   │   ├── components/      # 组件
-│   │   │   ├── PetEntity.ts
-│   │   │   ├── MergeSystem.ts
-│   │   │   ├── MainSceneUI.ts
-│   │   │   ├── GachaSceneUI.ts
-│   │   │   └── BagSceneUI.ts
-│   │   ├── utils/           # 工具
-│   │   │   └── Utils.ts
-│   │   └── GameMain.ts      # 游戏入口
-│   ├── scenes/              # 场景文件
-│   ├── prefabs/             # 预制体
-│   ├── textures/            # 图片资源
-│   ├── animations/          # 动画资源
-│   └── audios/              # 音效资源
-├── build/                   # 构建输出
-├── docs/                    # 文档
-└── README.md
+├── src/                      # 源代码
+│   ├── GameConfig.ts         # 游戏配置
+│   ├── GameMain.ts           # 游戏主入口
+│   ├── managers/             # 管理器
+│   │   ├── PetManager.ts     # 萌宠管理
+│   │   ├── BattleManager.ts  # 战斗系统
+│   │   ├── AudioManager.ts   # 音频管理
+│   │   ├── WechatSDK.ts      # 微信SDK
+│   │   └── CloudManager.ts   # 云开发
+│   ├── ui/                   # UI界面
+│   │   ├── MainSceneUI.ts    # 主场景
+│   │   ├── BattleSceneUI.ts  # 战斗场景
+│   │   ├── GachaSceneUI.ts   # 抽卡场景
+│   │   └── BagSceneUI.ts     # 背包场景
+│   ├── entities/             # 实体
+│   │   └── PetEntity.ts      # 萌宠实体
+│   └── utils/                # 工具类
+│       └── GameUtils.ts      # 游戏工具
+├── assets/                   # 资源文件
+│   └── resources/            # 游戏资源
+├── server/                   # 服务端
+│   └── cloudfunctions/       # 云函数
+├── docs/                     # 文档
+│   ├── AI_Asset_Generation.md
+│   ├── Testing_Guide.md
+│   └── Deployment_Guide.md
+└── build/                    # 构建输出
 ```
 
-## 🎯 核心玩法
+## 🎨 游戏特色
 
-### 1. 合成系统
-- 拖拽相同萌宠进行合成
-- 合成后升级进化
-- 解锁更强大的萌宠
+### 萌宠系统
+| 稀有度 | 数量 | 获取方式 | 特点 |
+|:---:|:---:|:---:|:---:|
+| N | 20 | 关卡掉落 | 基础萌宠 |
+| R | 15 | 抽卡/活动 | 特色技能 |
+| SR | 10 | 抽卡/合成 | 强力组合 |
+| SSR | 5 | 限定活动 | 改变战局 |
 
-### 2. 战斗系统
-- 选择3只萌宠出战
-- 自动战斗+技能选择
-- 挑战无尽关卡
+### 战斗系统
+- ✅ 自动战斗，策略为王
+- ✅ 每3波选择一次技能
+- ✅ 属性克制，伤害翻倍
+- ✅ 无尽模式，挑战极限
 
-### 3. 抽卡系统
-- 单抽/十连抽
-- N/R/SR/SSR稀有度
-- 保底机制
-
-### 4. 养成系统
-- 萌宠升级
-- 技能强化
-- 装备系统
+### 社交功能
+- ✅ 好友排行榜
+- ✅ 组队挑战
+- ✅ 萌宠交换
+- ✅ 分享复活
 
 ## 💰 变现设计
 
-| 模式 | 说明 | 占比 |
-|:---|:---|:---:|
-| 激励视频 | 复活、双倍奖励、额外抽卡 | 40% |
-| 内购 | 钻石、月卡、战令、皮肤 | 35% |
-| Banner广告 | 底部横幅 | 15% |
-| 插屏广告 | 关卡间插入 | 10% |
-
-## 📊 预期数据
-
-| 指标 | 目标 |
-|:---|:---:|
-| 次日留存 | 45% |
-| 7日留存 | 25% |
-| ARPU | ¥0.5 |
-| 月活跃用户 | 10万 |
+| 模式 | 占比 | 说明 |
+|:---:|:---:|:---:|
+| 激励视频 | 40% | 复活、双倍奖励 |
+| 内购 | 35% | 抽卡、皮肤、月卡 |
+| Banner广告 | 15% | 底部横幅 |
+| 插屏广告 | 10% | 关卡间插入 |
 
 ## 🛠️ 技术栈
 
 - **引擎**: Cocos Creator 3.x
 - **语言**: TypeScript
+- **平台**: 微信小游戏
 - **后端**: 微信云开发
-- **数据库**: MongoDB
+- **数据库**: MongoDB (云开发)
+- **存储**: 云存储
 
-## 📅 开发计划
+## 📱 屏幕适配
 
-- [x] 游戏设计方案
-- [x] 项目框架搭建
-- [x] 核心系统开发
-- [ ] UI界面设计
-- [ ] 美术资源制作
-- [ ] 音效音乐制作
-- [ ] 测试优化
-- [ ] 上线发布
+- 设计分辨率: 750x1334 (竖屏)
+- 适配方案: 固定高度，宽度自适应
+- 安全区域: 自动适配刘海屏、全面屏
 
-## 👥 团队
+## 🧪 测试
 
-- 策划: [Your Name]
-- 程序: [Your Name]
-- 美术: [To be hired]
-- 音效: [To be hired]
+```bash
+# 运行测试
+npm test
 
-## 📄 许可证
+# 查看测试报告
+npm run test:coverage
+```
+
+测试文档详见 [Testing_Guide.md](docs/Testing_Guide.md)
+
+## 🚀 部署
+
+详见 [Deployment_Guide.md](docs/Deployment_Guide.md)
+
+快速部署步骤：
+1. 配置AppID和环境ID
+2. 部署云函数
+3. 构建项目
+4. 上传微信审核
+5. 发布上线
+
+## 📊 项目进度
+
+| 模块 | 进度 | 状态 |
+|:---:|:---:|:---:|
+| 核心框架 | 100% | ✅ |
+| 萌宠系统 | 100% | ✅ |
+| 战斗系统 | 100% | ✅ |
+| UI界面 | 100% | ✅ |
+| 微信SDK | 100% | ✅ |
+| 云开发 | 100% | ✅ |
+| 美术资源 | 待制作 | ⏳ |
+| 音效音乐 | 待制作 | ⏳ |
+
+**总体进度: 100% (代码完成)**
+
+## 📝 文档
+
+- [游戏设计文档](README.md)
+- [AI美术生成指南](docs/AI_Asset_Generation.md)
+- [测试指南](docs/Testing_Guide.md)
+- [部署指南](docs/Deployment_Guide.md)
+- [更新日志](COMMIT_LOG.md)
+
+## 🤝 贡献
+
+欢迎提交Issue和Pull Request！
+
+## 📄 许可
 
 MIT License
 
+## 👤 作者
+
+- GitHub: [@AsFawn124](https://github.com/AsFawn124)
+- 项目地址: https://github.com/AsFawn124/mini-game-mengchong
+
 ---
 
-**欢迎Star和Fork！一起打造爆款微信小游戏！** ⭐
+⭐ 如果这个项目对你有帮助，请给个Star！
