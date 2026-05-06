@@ -9,6 +9,10 @@ import { BattleManager } from './managers/BattleManager';
 import { AudioManager } from './managers/AudioManager';
 import { WechatSDK } from './managers/WechatSDK';
 import { CloudManager } from './managers/CloudManager';
+import { TutorialManager } from './managers/TutorialManager';
+import { DailyTaskManager } from './managers/DailyTaskManager';
+import { AchievementManager } from './managers/AchievementManager';
+import { FriendManager } from './managers/FriendManager';
 
 const { ccclass, property } = cc._decorator;
 
@@ -27,6 +31,10 @@ export default class GameMain extends cc.Component {
     public audioManager: AudioManager = null;
     public wechatSDK: WechatSDK = null;
     public cloudManager: CloudManager = null;
+    public tutorialManager: TutorialManager = null;
+    public dailyTaskManager: DailyTaskManager = null;
+    public achievementManager: AchievementManager = null;
+    public friendManager: FriendManager = null;
     
     // 游戏状态
     private _isInitialized: boolean = false;
@@ -64,6 +72,9 @@ export default class GameMain extends cc.Component {
             
             // 4. 初始化音频
             this.audioManager.init();
+            
+            // 5. 检查新手引导
+            this.tutorialManager.checkAndStart();
             
             this._isInitialized = true;
             console.log('[GameMain] 游戏初始化完成');
@@ -103,6 +114,10 @@ export default class GameMain extends cc.Component {
         this.petManager = managersNode.addComponent(PetManager);
         this.battleManager = managersNode.addComponent(BattleManager);
         this.audioManager = managersNode.addComponent(AudioManager);
+        this.tutorialManager = managersNode.addComponent(TutorialManager);
+        this.dailyTaskManager = managersNode.addComponent(DailyTaskManager);
+        this.achievementManager = managersNode.addComponent(AchievementManager);
+        this.friendManager = managersNode.addComponent(FriendManager);
         
         console.log('[GameMain] 管理器初始化完成');
     }
