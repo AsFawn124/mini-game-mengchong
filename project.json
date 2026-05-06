@@ -1,19 +1,26 @@
 {
-  "name": "萌宠大冒险",
-  "uuid": "f47ac10b-58cc-4372-a567-0e02b2c3d479",
-  "version": "3.8.0",
-  "creator": {
-    "version": "3.8.0"
-  },
-  "dependencies": {
-    "@cocos/creator-types": "^3.8.0"
-  },
-  "scripts": {
-    "build": "cocos build --platform wechatgame",
-    "preview": "cocos run --platform web"
-  },
-  "wechatgame": {
-    "appid": "wx8e1435739bbdf94d",
-    "orientation": "portrait"
-  }
+  "project_type": "javascript",
+  "debug_mode": true,
+  "showFPS": false,
+  "frameRate": 60,
+  "id": "gameCanvas",
+  "renderMode": 0,
+  "engineDir": "cocos2d-js",
+  "modules": [
+    "cocos2d",
+    "extension/wechat"
+  ],
+  "jsList": [
+    "src/GameConfig.js",
+    "src/managers/PetManager.js",
+    "src/managers/BattleManager.js",
+    "src/managers/AudioManager.js",
+    "src/managers/WechatSDK.js",
+    "src/managers/CloudManager.js",
+    "src/ui/MainSceneUI.js",
+    "src/ui/BattleSceneUI.js",
+    "src/ui/GachaSceneUI.js",
+    "src/ui/BagSceneUI.js",
+    "src/GameMain.js"
+  ]
 }
