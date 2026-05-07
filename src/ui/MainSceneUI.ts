@@ -5,6 +5,7 @@
 
 import GameMain from '../GameMain';
 import { Pet } from '../managers/PetManager';
+import { formatNumber } from '../utils/GameUtils';
 
 const { ccclass, property } = cc._decorator;
 
@@ -77,21 +78,33 @@ export default class MainSceneUI extends cc.Component {
      * 刷新UI显示
      */
     private _refreshUI(): void {
-        this.goldLabel.string = this._formatNumber(this._userData.gold);
-        this.diamondLabel.string = this._formatNumber(this._userData.diamond);
-        this.levelLabel.string = `Lv.${this._userData.level}`;
+        if (this.goldLabel) {
+            this.goldLabel.string = formatNumber(this._userData.gold);
+        }
+        if (this.diamondLabel) {
+            this.diamondLabel.string = formatNumber(this._userData.diamond);
+        }
+        if (this.levelLabel) {
+            this.levelLabel.string = `Lv.${this._userData.level}`;
+        }
     }
     
     /**
      * 显示上阵萌宠
      */
     private _showTeamPets(): void {
-        if (!GameMain.instance) return;
+        if (!GameMain.instance || !this.petContainer) return;
         
         const team = GameMain.instance.petManager.getTeam();
         
         // 清空容器
         this.petContainer.removeAllChildren();
+        
+        // 如果没有上阵萌宠，显示提示
+        if (team.length === 0) {
+            this._showEmptyTeamMessage();
+            return;
+        }
         
         // 显示上阵萌宠
         team.forEach((pet, index) => {
@@ -104,6 +117,21 @@ export default class MainSceneUI extends cc.Component {
             const emptyNode = this._createEmptySlot(i);
             this.petContainer.addChild(emptyNode);
         }
+    }
+    
+    /**
+     * 显示空阵容提示
+     */
+    private _showEmptyTeamMessage(): void {
+        const msgNode = new cc.Node('EmptyMessage');
+        msgNode.setPosition(0, 0);
+        
+        const label = msgNode.addComponent(cc.Label);
+        label.string = '点击上阵萌宠';
+        label.fontSize = 24;
+        label.color = cc.Color.GRAY;
+        
+        this.petContainer.addChild(msgNode);
     }
     
     /**

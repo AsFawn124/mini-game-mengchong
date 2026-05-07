@@ -12,8 +12,8 @@ const { ccclass, property } = cc._decorator;
 export default class BagSceneUI extends cc.Component {
     
     // UI组件引用
-    @property(cc.Node)
-    petListContent: cc.Node = null;
+    @property(cc.ScrollView)
+    petListScrollView: cc.ScrollView = null;
     
     @property(cc.Node)
     petDetailPanel: cc.Node = null;
