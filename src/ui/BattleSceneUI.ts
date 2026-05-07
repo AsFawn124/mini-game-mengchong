@@ -6,6 +6,8 @@
 import GameMain from '../GameMain';
 import { Pet } from '../managers/PetManager';
 import { BattleState, Enemy } from '../managers/BattleManager';
+import { AudioManagerNew } from '../managers/AudioManagerNew';
+import { BGMType, SFXType } from '../config/AudioConfig';
 
 const { ccclass, property } = cc._decorator;
 
@@ -54,6 +56,9 @@ export default class BattleSceneUI extends cc.Component {
     
     start() {
         this._startBattle();
+        
+        // 播放战斗BGM
+        AudioManagerNew.instance?.playBGM(BGMType.BATTLE);
     }
     
     /**
@@ -77,7 +82,7 @@ export default class BattleSceneUI extends cc.Component {
         if (!GameMain.instance) return;
         
         // 播放战斗音效
-        GameMain.instance.audioManager.playBattleStart();
+        AudioManagerNew.instance?.playSFX(SFXType.POPUP);
         
         // 获取上阵队伍
         const team = GameMain.instance.petManager.getTeam();
@@ -332,8 +337,8 @@ export default class BattleSceneUI extends cc.Component {
     private _onPetAttack(data: any): void {
         console.log(`[BattleSceneUI] ${data.pet} 攻击 ${data.target}，伤害 ${data.damage}`);
         
-        // 播放攻击动画
-        GameMain.instance?.audioManager.playAttack();
+        // 播放攻击音效
+        AudioManagerNew.instance?.playSFX(SFXType.ATTACK);
         
         // 更新敌人血条
         this._updateEnemyHP(data.target, data.remainingHp);
@@ -344,6 +349,9 @@ export default class BattleSceneUI extends cc.Component {
      */
     private _onEnemyAttack(data: any): void {
         console.log(`[BattleSceneUI] ${data.enemy} 攻击 ${data.target}，伤害 ${data.damage}`);
+        
+        // 播放受击音效
+        AudioManagerNew.instance?.playSFX(SFXType.HIT);
         
         // 更新萌宠血条
         this._updatePetHP(data.target, data.remainingHp);
@@ -402,11 +410,13 @@ export default class BattleSceneUI extends cc.Component {
         if (data.victory) {
             this.resultTitle.string = '胜利！';
             this.resultTitle.color = cc.Color.GREEN;
-            GameMain.instance?.audioManager.playVictory();
+            // 播放胜利音效组合
+            AudioManagerNew.instance?.playVictory();
         } else {
             this.resultTitle.string = '失败';
             this.resultTitle.color = cc.Color.RED;
-            GameMain.instance?.audioManager.playDefeat();
+            // 播放失败音效组合
+            AudioManagerNew.instance?.playDefeat();
         }
         
         this.resultWaveLabel.string = `坚持到第 ${data.wave} 波`;
@@ -421,9 +431,11 @@ export default class BattleSceneUI extends cc.Component {
      * 点击暂停按钮
      */
     private _onPauseClick(): void {
+        // 播放点击音效
+        AudioManagerNew.instance?.playSFX(SFXType.CLICK);
+        
         if (GameMain.instance) {
             GameMain.instance.battleManager.togglePause();
-            GameMain.instance.audioManager.playButtonClick();
         }
     }
     
@@ -431,6 +443,9 @@ export default class BattleSceneUI extends cc.Component {
      * 点击继续按钮
      */
     private _onContinueClick(): void {
+        // 播放点击音效
+        AudioManagerNew.instance?.playSFX(SFXType.CLICK);
+        
         if (this._isFinished) {
             // 重新开始
             this.resultPanel.active = false;
@@ -442,6 +457,9 @@ export default class BattleSceneUI extends cc.Component {
      * 点击退出按钮
      */
     private _onExitClick(): void {
+        // 播放点击音效
+        AudioManagerNew.instance?.playSFX(SFXType.CLICK);
+        
         // 结束战斗
         if (GameMain.instance) {
             GameMain.instance.battleManager.endBattle();

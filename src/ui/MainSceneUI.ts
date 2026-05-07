@@ -6,6 +6,8 @@
 import GameMain from '../GameMain';
 import { Pet } from '../managers/PetManager';
 import { formatNumber } from '../utils/GameUtils';
+import { AudioManagerNew } from '../managers/AudioManagerNew';
+import { BGMType, SFXType } from '../config/AudioConfig';
 
 const { ccclass, property } = cc._decorator;
 
@@ -53,6 +55,9 @@ export default class MainSceneUI extends cc.Component {
     start() {
         this._refreshUI();
         this._showTeamPets();
+        
+        // 播放主界面BGM
+        AudioManagerNew.instance?.playBGM(BGMType.MAIN);
     }
     
     /**
@@ -205,10 +210,8 @@ export default class MainSceneUI extends cc.Component {
     private _onBattleClick(): void {
         console.log('[MainSceneUI] 进入战斗');
         
-        // 播放音效
-        if (GameMain.instance) {
-            GameMain.instance.audioManager.playButtonClick();
-        }
+        // 播放点击音效
+        AudioManagerNew.instance?.playSFX(SFXType.CLICK);
         
         // 检查是否有上阵萌宠
         const team = GameMain.instance?.petManager.getTeam();
@@ -227,9 +230,8 @@ export default class MainSceneUI extends cc.Component {
     private _onGachaClick(): void {
         console.log('[MainSceneUI] 进入抽卡');
         
-        if (GameMain.instance) {
-            GameMain.instance.audioManager.playButtonClick();
-        }
+        // 播放点击音效
+        AudioManagerNew.instance?.playSFX(SFXType.CLICK);
         
         GameMain.instance?.enterScene('GachaScene');
     }
@@ -240,9 +242,8 @@ export default class MainSceneUI extends cc.Component {
     private _onBagClick(): void {
         console.log('[MainSceneUI] 进入背包');
         
-        if (GameMain.instance) {
-            GameMain.instance.audioManager.playButtonClick();
-        }
+        // 播放点击音效
+        AudioManagerNew.instance?.playSFX(SFXType.CLICK);
         
         GameMain.instance?.enterScene('BagScene');
     }
@@ -253,9 +254,8 @@ export default class MainSceneUI extends cc.Component {
     private _onShopClick(): void {
         console.log('[MainSceneUI] 进入商店');
         
-        if (GameMain.instance) {
-            GameMain.instance.audioManager.playButtonClick();
-        }
+        // 播放点击音效
+        AudioManagerNew.instance?.playSFX(SFXType.CLICK);
         
         this._showToast('商店功能开发中...');
     }

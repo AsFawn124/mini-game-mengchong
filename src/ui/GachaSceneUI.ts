@@ -5,6 +5,8 @@
 
 import GameMain from '../GameMain';
 import { GameConfig } from '../GameConfig';
+import { AudioManagerNew } from '../managers/AudioManagerNew';
+import { BGMType, SFXType } from '../config/AudioConfig';
 
 const { ccclass, property } = cc._decorator;
 
@@ -50,6 +52,9 @@ export default class GachaSceneUI extends cc.Component {
     
     start() {
         this._refreshUI();
+        
+        // 播放抽卡场景BGM
+        AudioManagerNew.instance?.playBGM(BGMType.GACHA);
     }
     
     /**
@@ -87,6 +92,9 @@ export default class GachaSceneUI extends cc.Component {
     private _onSingleDraw(): void {
         if (this._isDrawing) return;
         
+        // 播放点击音效
+        AudioManagerNew.instance?.playSFX(SFXType.CLICK);
+        
         const cost = GameConfig.BASE_GACHA_COST;
         if (this._diamond < cost) {
             this._showToast('钻石不足！');
@@ -101,6 +109,9 @@ export default class GachaSceneUI extends cc.Component {
      */
     private _onTenDraw(): void {
         if (this._isDrawing) return;
+        
+        // 播放点击音效
+        AudioManagerNew.instance?.playSFX(SFXType.CLICK);
         
         const cost = GameConfig.GACHA_COST_10;
         if (this._diamond < cost) {
@@ -122,7 +133,7 @@ export default class GachaSceneUI extends cc.Component {
         this._diamond -= cost;
         
         // 播放抽卡音效
-        GameMain.instance?.audioManager.playGacha();
+        AudioManagerNew.instance?.playSFX(SFXType.GACHA);
         
         // 播放抽卡动画
         this._playDrawAnimation(() => {
@@ -167,14 +178,27 @@ export default class GachaSceneUI extends cc.Component {
         this.resultPanel.active = true;
         this.resultContent.removeAllChildren();
         
+        // 检查最高稀有度
+        let maxRarity: 'N' | 'R' | 'SR' | 'SSR' = 'N';
+        
         // 显示获得的萌宠
         petIds.forEach((petId, index) => {
             const template = this._getPetTemplate(petId);
             if (template) {
                 const node = this._createResultPetNode(template, index);
                 this.resultContent.addChild(node);
+                
+                // 记录最高稀有度
+                if (template.rarity === 'SSR') maxRarity = 'SSR';
+                else if (template.rarity === 'SR' && maxRarity !== 'SSR') maxRarity = 'SR';
+                else if (template.rarity === 'R' && maxRarity === 'N') maxRarity = 'R';
             }
         });
+        
+        // 根据最高稀有度播放音效
+        setTimeout(() => {
+            AudioManagerNew.instance?.playGachaByRarity(maxRarity);
+        }, 500);
     }
     
     /**
@@ -252,6 +276,9 @@ export default class GachaSceneUI extends cc.Component {
      * 再抽一次
      */
     private _onDrawAgain(): void {
+        // 播放点击音效
+        AudioManagerNew.instance?.playSFX(SFXType.CLICK);
+        
         this.resultPanel.active = false;
         
         // 判断上次是单抽还是十连
@@ -267,7 +294,9 @@ export default class GachaSceneUI extends cc.Component {
      * 返回主场景
      */
     private _onBack(): void {
-        GameMain.instance?.audioManager.playButtonClick();
+        // 播放点击音效
+        AudioManagerNew.instance?.playSFX(SFXType.CLICK);
+        
         GameMain.instance?.enterScene('MainScene');
     }
     
