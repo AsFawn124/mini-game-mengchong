@@ -1,0 +1,148 @@
+{
+  "version": "1.0.0",
+  "bgm": [
+    {
+      "id": "bgm_main",
+      "name": "主界面音乐",
+      "file": "audio/bgm_main.mp3",
+      "loop": true,
+      "volume": 0.5
+    },
+    {
+      "id": "bgm_battle",
+      "name": "战斗音乐",
+      "file": "audio/bgm_battle.mp3",
+      "loop": true,
+      "volume": 0.6
+    },
+    {
+      "id": "bgm_gacha",
+      "name": "抽卡音乐",
+      "file": "audio/bgm_gacha.mp3",
+      "loop": true,
+      "volume": 0.5
+    }
+  ],
+  "sfx": [
+    {
+      "id": "sfx_click",
+      "name": "点击音效",
+      "file": "audio/sfx_click.mp3",
+      "volume": 0.8
+    },
+    {
+      "id": "sfx_attack",
+      "name": "攻击音效",
+      "file": "audio/sfx_attack.mp3",
+      "volume": 0.7
+    },
+    {
+      "id": "sfx_hit",
+      "name": "受击音效",
+      "file": "audio/sfx_hit.mp3",
+      "volume": 0.7
+    },
+    {
+      "id": "sfx_gacha",
+      "name": "抽卡音效",
+      "file": "audio/sfx_gacha.mp3",
+      "volume": 0.8
+    },
+    {
+      "id": "sfx_victory",
+      "name": "胜利音效",
+      "file": "audio/sfx_victory.mp3",
+      "volume": 0.8
+    },
+    {
+      "id": "sfx_defeat",
+      "name": "失败音效",
+      "file": "audio/sfx_defeat.mp3",
+      "volume": 0.7
+    },
+    {
+      "id": "sfx_merge",
+      "name": "合成音效",
+      "file": "audio/sfx_merge.mp3",
+      "volume": 0.8
+    },
+    {
+      "id": "sfx_upgrade",
+      "name": "升级音效",
+      "file": "audio/sfx_upgrade.mp3",
+      "volume": 0.8
+    },
+    {
+      "id": "sfx_popup",
+      "name": "弹窗音效",
+      "file": "audio/sfx_popup.mp3",
+      "volume": 0.6
+    },
+    {
+      "id": "sfx_coin",
+      "name": "金币音效",
+      "file": "audio/sfx_coin.mp3",
+      "volume": 0.7
+    },
+    {
+      "id": "sfx_rare",
+      "name": "稀有获得",
+      "file": "audio/sfx_rare.mp3",
+      "volume": 0.9
+    },
+    {
+      "id": "sfx_epic",
+      "name": "史诗获得",
+      "file": "audio/sfx_epic.mp3",
+      "volume": 0.9
+    },
+    {
+      "id": "sfx_legend",
+      "name": "传说获得",
+      "file": "audio/sfx_legend.mp3",
+      "volume": 1.0
+    },
+    {
+      "id": "sfx_skill",
+      "name": "技能释放",
+      "file": "audio/sfx_skill.mp3",
+      "volume": 0.8
+    },
+    {
+      "id": "sfx_heal",
+      "name": "治疗音效",
+      "file": "audio/sfx_heal.mp3",
+      "volume": 0.7
+    },
+    {
+      "id": "sfx_equip",
+      "name": "装备音效",
+      "file": "audio/sfx_equip.mp3",
+      "volume": 0.7
+    },
+    {
+      "id": "sfx_error",
+      "name": "错误音效",
+      "file": "audio/sfx_error.mp3",
+      "volume": 0.6
+    },
+    {
+      "id": "sfx_success",
+      "name": "成功音效",
+      "file": "audio/sfx_success.mp3",
+      "volume": 0.8
+    },
+    {
+      "id": "sfx_buy",
+      "name": "购买音效",
+      "file": "audio/sfx_buy.mp3",
+      "volume": 0.7
+    },
+    {
+      "id": "sfx_wave_clear",
+      "name": "波次清理",
+      "file": "audio/sfx_wave_clear.mp3",
+      "volume": 0.8
+    }
+  ]
+}

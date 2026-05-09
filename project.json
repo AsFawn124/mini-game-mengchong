@@ -1,26 +1,15 @@
 {
-  "project_type": "javascript",
-  "debug_mode": true,
-  "showFPS": false,
-  "frameRate": 60,
-  "id": "gameCanvas",
-  "renderMode": 0,
-  "engineDir": "cocos2d-js",
-  "modules": [
-    "cocos2d",
-    "extension/wechat"
-  ],
-  "jsList": [
-    "src/GameConfig.js",
-    "src/managers/PetManager.js",
-    "src/managers/BattleManager.js",
-    "src/managers/AudioManager.js",
-    "src/managers/WechatSDK.js",
-    "src/managers/CloudManager.js",
-    "src/ui/MainSceneUI.js",
-    "src/ui/BattleSceneUI.js",
-    "src/ui/GachaSceneUI.js",
-    "src/ui/BagSceneUI.js",
-    "src/GameMain.js"
-  ]
+  "name": "萌宠大冒险",
+  "version": "1.0.0",
+  "description": "一款萌宠合成+战斗的微信小游戏",
+  "main": "assets/scripts/GameMain.ts",
+  "scripts": {
+    "build": "echo 'Building project...'",
+    "dev": "echo 'Starting development server...'",
+    "test": "echo 'Running tests...'"
+  },
+  "author": "Game Developer",
+  "license": "MIT",
+  "devDependencies": {},
+  "dependencies": {}
 }
