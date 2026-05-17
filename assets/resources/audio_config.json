@@ -1,148 +1,656 @@
 {
-  "version": "1.0.0",
+  "version": "2.0.0",
+  "lastUpdated": "2026-05-12",
   "bgm": [
     {
       "id": "bgm_main",
       "name": "主界面音乐",
-      "file": "audio/bgm_main.mp3",
+      "description": "轻快治愈的冒险主旋律，营造温馨的萌宠家园氛围",
+      "file": "audio/bgm/main_theme.mp3",
       "loop": true,
-      "volume": 0.5
+      "volume": 0.5,
+      "duration": 120,
+      "format": "mp3",
+      "bitrate": "128kbps",
+      "source": {
+        "name": "Happy Adventure Theme",
+        "url": "https://opengameart.org/content/happy-adventure",
+        "author": "Spring Spring",
+        "license": "CC0 (Public Domain)",
+        "keywords": "happy, casual, game, menu, cute, adventure"
+      },
+      "fadeInMs": 1500,
+      "fadeOutMs": 1000
     },
     {
       "id": "bgm_battle",
       "name": "战斗音乐",
-      "file": "audio/bgm_battle.mp3",
+      "description": "激昂热血的战斗曲目，提升战斗紧张感",
+      "file": "audio/bgm/battle_theme.mp3",
       "loop": true,
-      "volume": 0.6
+      "volume": 0.6,
+      "duration": 90,
+      "format": "mp3",
+      "bitrate": "128kbps",
+      "source": {
+        "name": "Battle Theme RPG",
+        "url": "https://opengameart.org/content/battle-theme-rpg",
+        "author": "Alexandr Zhelanov",
+        "license": "CC-BY 3.0",
+        "keywords": "battle, action, intense, rpg, fight"
+      },
+      "fadeInMs": 500,
+      "fadeOutMs": 800
     },
     {
       "id": "bgm_gacha",
       "name": "抽卡音乐",
-      "file": "audio/bgm_gacha.mp3",
+      "description": "神秘期待感的抽卡旋律，营造悬念与惊喜",
+      "file": "audio/bgm/gacha_theme.mp3",
       "loop": true,
-      "volume": 0.5
+      "volume": 0.55,
+      "duration": 60,
+      "format": "mp3",
+      "bitrate": "128kbps",
+      "source": {
+        "name": "Mystical Gacha Pull",
+        "url": "https://freesound.org/people/Mrthenoronha/sounds/517267/",
+        "author": "Mrthenoronha",
+        "license": "CC0 (Public Domain)",
+        "keywords": "gacha, mystery, magical, anticipation, suspense"
+      },
+      "fadeInMs": 1000,
+      "fadeOutMs": 500
+    },
+    {
+      "id": "bgm_victory",
+      "name": "胜利音乐",
+      "description": "欢快庆祝的胜利号角，让玩家感受成功喜悦",
+      "file": "audio/bgm/victory_fanfare.mp3",
+      "loop": false,
+      "volume": 0.65,
+      "duration": 15,
+      "format": "mp3",
+      "bitrate": "128kbps",
+      "source": {
+        "name": "Victory Fanfare",
+        "url": "https://opengameart.org/content/victory-fanfare",
+        "author": "cynicmusic",
+        "license": "CC0 (Public Domain)",
+        "keywords": "victory, win, celebration, fanfare, triumph"
+      }
+    },
+    {
+      "id": "bgm_defeat",
+      "name": "失败音乐",
+      "description": "温和抚慰的失败旋律，鼓励玩家再次挑战",
+      "file": "audio/bgm/defeat_melody.mp3",
+      "loop": false,
+      "volume": 0.5,
+      "duration": 12,
+      "format": "mp3",
+      "bitrate": "128kbps",
+      "source": {
+        "name": "Sad Game Over",
+        "url": "https://freesound.org/people/josepharaoh99/sounds/365833/",
+        "author": "josepharaoh99",
+        "license": "CC0 (Public Domain)",
+        "keywords": "defeat, sad, game over, melancholic, encouragement"
+      }
+    },
+    {
+      "id": "bgm_shop",
+      "name": "商店音乐",
+      "description": "轻松愉快的商店背景音乐",
+      "file": "audio/bgm/shop_theme.mp3",
+      "loop": true,
+      "volume": 0.4,
+      "duration": 90,
+      "format": "mp3",
+      "bitrate": "128kbps",
+      "source": {
+        "name": "Casual Shop Theme",
+        "url": "https://opengameart.org/content/casual-game-music-pack",
+        "author": "Loyalty Freak Music",
+        "license": "CC0 (Public Domain)",
+        "keywords": "shop, calm, casual, cheerful, acoustic"
+      },
+      "fadeInMs": 800,
+      "fadeOutMs": 600
+    },
+    {
+      "id": "bgm_rank",
+      "name": "排行榜音乐",
+      "description": "荣耀殿堂背景音乐，烘托竞技氛围",
+      "file": "audio/bgm/rank_theme.mp3",
+      "loop": true,
+      "volume": 0.45,
+      "duration": 100,
+      "format": "mp3",
+      "bitrate": "128kbps",
+      "source": {
+        "name": "Epic Orchestral Loop",
+        "url": "https://opengameart.org/content/epic-orchestral-loop",
+        "author": "tcarisland",
+        "license": "CC0 (Public Domain)",
+        "keywords": "epic, orchestral, ranking, competitive, glory"
+      },
+      "fadeInMs": 1200,
+      "fadeOutMs": 800
     }
   ],
   "sfx": [
     {
       "id": "sfx_click",
-      "name": "点击音效",
-      "file": "audio/sfx_click.mp3",
-      "volume": 0.8
-    },
-    {
-      "id": "sfx_attack",
-      "name": "攻击音效",
-      "file": "audio/sfx_attack.mp3",
-      "volume": 0.7
-    },
-    {
-      "id": "sfx_hit",
-      "name": "受击音效",
-      "file": "audio/sfx_hit.mp3",
-      "volume": 0.7
-    },
-    {
-      "id": "sfx_gacha",
-      "name": "抽卡音效",
-      "file": "audio/sfx_gacha.mp3",
-      "volume": 0.8
-    },
-    {
-      "id": "sfx_victory",
-      "name": "胜利音效",
-      "file": "audio/sfx_victory.mp3",
-      "volume": 0.8
-    },
-    {
-      "id": "sfx_defeat",
-      "name": "失败音效",
-      "file": "audio/sfx_defeat.mp3",
-      "volume": 0.7
-    },
-    {
-      "id": "sfx_merge",
-      "name": "合成音效",
-      "file": "audio/sfx_merge.mp3",
-      "volume": 0.8
-    },
-    {
-      "id": "sfx_upgrade",
-      "name": "升级音效",
-      "file": "audio/sfx_upgrade.mp3",
-      "volume": 0.8
+      "name": "按钮点击",
+      "description": "清脆的按钮点击反馈音效",
+      "file": "audio/sfx/ui_click.mp3",
+      "volume": 0.8,
+      "duration": 0.1,
+      "category": "ui",
+      "source": {
+        "name": "Button Click",
+        "url": "https://freesound.org/people/Arronet/sounds/539058/",
+        "license": "CC0 (Public Domain)",
+        "keywords": "button, click, ui, menu, tap"
+      }
     },
     {
       "id": "sfx_popup",
-      "name": "弹窗音效",
-      "file": "audio/sfx_popup.mp3",
-      "volume": 0.6
+      "name": "弹窗出现",
+      "description": "弹窗/面板打开时的音效",
+      "file": "audio/sfx/ui_popup.mp3",
+      "volume": 0.6,
+      "duration": 0.3,
+      "category": "ui",
+      "source": {
+        "name": "Pop Up Whoosh",
+        "url": "https://freesound.org/people/plasterbrain/sounds/443040/",
+        "license": "CC0 (Public Domain)",
+        "keywords": "popup, whoosh, open, panel, appear"
+      }
     },
     {
-      "id": "sfx_coin",
-      "name": "金币音效",
-      "file": "audio/sfx_coin.mp3",
-      "volume": 0.7
+      "id": "sfx_close",
+      "name": "弹窗关闭",
+      "description": "弹窗/面板关闭时的音效",
+      "file": "audio/sfx/ui_close.mp3",
+      "volume": 0.5,
+      "duration": 0.2,
+      "category": "ui",
+      "source": {
+        "name": "Window Close",
+        "url": "https://freesound.org/people/soundnimja/sounds/173186/",
+        "license": "CC0 (Public Domain)",
+        "keywords": "close, window, panel, swoosh, dismiss"
+      }
     },
     {
-      "id": "sfx_rare",
-      "name": "稀有获得",
-      "file": "audio/sfx_rare.mp3",
-      "volume": 0.9
+      "id": "sfx_success",
+      "name": "操作成功",
+      "description": "操作成功确认音效，三连音叮咚",
+      "file": "audio/sfx/ui_success.mp3",
+      "volume": 0.8,
+      "duration": 0.5,
+      "category": "ui",
+      "source": {
+        "name": "Success Chime",
+        "url": "https://freesound.org/people/rhodesmas/sounds/320780/",
+        "license": "CC BY 3.0",
+        "keywords": "success, chime, ding, positive, confirm"
+      }
     },
     {
-      "id": "sfx_epic",
-      "name": "史诗获得",
-      "file": "audio/sfx_epic.mp3",
-      "volume": 0.9
+      "id": "sfx_error",
+      "name": "操作失败",
+      "description": "操作失败/错误提示音效",
+      "file": "audio/sfx/ui_error.mp3",
+      "volume": 0.6,
+      "duration": 0.3,
+      "category": "ui",
+      "source": {
+        "name": "Error Buzz",
+        "url": "https://freesound.org/people/Autistic%20Lucario/sounds/200016/",
+        "license": "CC0 (Public Domain)",
+        "keywords": "error, buzzer, wrong, deny, failure"
+      }
     },
     {
-      "id": "sfx_legend",
-      "name": "传说获得",
-      "file": "audio/sfx_legend.mp3",
-      "volume": 1.0
+      "id": "sfx_attack",
+      "name": "普通攻击",
+      "description": "基础物理攻击命中的打击音效",
+      "file": "audio/sfx/battle_attack.mp3",
+      "volume": 0.7,
+      "duration": 0.2,
+      "category": "battle",
+      "source": {
+        "name": "Punch Hit",
+        "url": "https://freesound.org/people/Ekokubza123/sounds/542708/",
+        "license": "CC0 (Public Domain)",
+        "keywords": "hit, punch, attack, impact, combat"
+      }
     },
     {
-      "id": "sfx_skill",
-      "name": "技能释放",
-      "file": "audio/sfx_skill.mp3",
-      "volume": 0.8
+      "id": "sfx_hit",
+      "name": "受到伤害",
+      "description": "萌宠受到伤害时的音效",
+      "file": "audio/sfx/battle_hit.mp3",
+      "volume": 0.65,
+      "duration": 0.2,
+      "category": "battle",
+      "source": {
+        "name": "Damage Taken",
+        "url": "https://freesound.org/people/cabled_mess/sounds/350984/",
+        "license": "CC0 (Public Domain)",
+        "keywords": "hurt, damage, hit, pain, ouch"
+      }
+    },
+    {
+      "id": "sfx_skill_fire",
+      "name": "火系技能",
+      "description": "火焰技能释放音效",
+      "file": "audio/sfx/battle_fire.mp3",
+      "volume": 0.8,
+      "duration": 0.5,
+      "category": "battle",
+      "source": {
+        "name": "Fire Magic Spell",
+        "url": "https://freesound.org/people/qubodup/sounds/442827/",
+        "license": "CC0 (Public Domain)",
+        "keywords": "fire, magic, spell, flame, whoosh"
+      }
+    },
+    {
+      "id": "sfx_skill_water",
+      "name": "水系技能",
+      "description": "水系技能释放音效",
+      "file": "audio/sfx/battle_water.mp3",
+      "volume": 0.75,
+      "duration": 0.5,
+      "category": "battle",
+      "source": {
+        "name": "Water Splash Magic",
+        "url": "https://freesound.org/people/InspectorJ/sounds/416710/",
+        "license": "CC BY 4.0",
+        "keywords": "water, splash, magic, spell, bubble"
+      }
+    },
+    {
+      "id": "sfx_skill_grass",
+      "name": "草系技能",
+      "description": "草系技能释放音效",
+      "file": "audio/sfx/battle_grass.mp3",
+      "volume": 0.75,
+      "duration": 0.5,
+      "category": "battle",
+      "source": {
+        "name": "Nature Magic",
+        "url": "https://freesound.org/people/kwahmah_02/sounds/269252/",
+        "license": "CC0 (Public Domain)",
+        "keywords": "nature, leaf, plant, magic, growth"
+      }
+    },
+    {
+      "id": "sfx_skill_light",
+      "name": "光系技能",
+      "description": "光系技能释放音效，神圣悦耳",
+      "file": "audio/sfx/battle_light.mp3",
+      "volume": 0.8,
+      "duration": 0.6,
+      "category": "battle",
+      "source": {
+        "name": "Holy Light Magic",
+        "url": "https://freesound.org/people/Anthousai/sounds/411307/",
+        "license": "CC0 (Public Domain)",
+        "keywords": "light, holy, angelic, magic, sparkle"
+      }
+    },
+    {
+      "id": "sfx_skill_dark",
+      "name": "暗系技能",
+      "description": "暗系技能释放音效，低沉神秘",
+      "file": "audio/sfx/battle_dark.mp3",
+      "volume": 0.8,
+      "duration": 0.6,
+      "category": "battle",
+      "source": {
+        "name": "Dark Magic Spell",
+        "url": "https://freesound.org/people/Gmunk/sounds/328647/",
+        "license": "CC0 (Public Domain)",
+        "keywords": "dark, evil, shadow, magic, rumble"
+      }
+    },
+    {
+      "id": "sfx_crit",
+      "name": "暴击音效",
+      "description": "暴击触发时的强力打击音效",
+      "file": "audio/sfx/battle_critical.mp3",
+      "volume": 0.9,
+      "duration": 0.4,
+      "category": "battle",
+      "source": {
+        "name": "Powerful Hit",
+        "url": "https://freesound.org/people/cabled_mess/sounds/350987/",
+        "license": "CC0 (Public Domain)",
+        "keywords": "critical, powerful, heavy, impact, strong"
+      }
     },
     {
       "id": "sfx_heal",
       "name": "治疗音效",
-      "file": "audio/sfx_heal.mp3",
-      "volume": 0.7
+      "description": "治疗/恢复技能释放音效",
+      "file": "audio/sfx/battle_heal.mp3",
+      "volume": 0.7,
+      "duration": 0.5,
+      "category": "battle",
+      "source": {
+        "name": "Heal Spell",
+        "url": "https://freesound.org/people/Timbre/sounds/525293/",
+        "license": "CC BY-NC 4.0",
+        "keywords": "heal, cure, recovery, magic, sparkle"
+      }
     },
     {
-      "id": "sfx_equip",
-      "name": "装备音效",
-      "file": "audio/sfx_equip.mp3",
-      "volume": 0.7
+      "id": "sfx_battle_win",
+      "name": "战斗胜利",
+      "description": "战斗胜利结算音效",
+      "file": "audio/sfx/battle_victory.mp3",
+      "volume": 0.85,
+      "duration": 1.0,
+      "category": "battle",
+      "source": {
+        "name": "Win Jingle",
+        "url": "https://freesound.org/people/LittleRobotSoundFactory/sounds/270503/",
+        "license": "CC BY 4.0",
+        "keywords": "victory, win, jingle, celebration, win"
+      }
     },
     {
-      "id": "sfx_error",
-      "name": "错误音效",
-      "file": "audio/sfx_error.mp3",
-      "volume": 0.6
+      "id": "sfx_battle_lose",
+      "name": "战斗失败",
+      "description": "战斗失败结算音效",
+      "file": "audio/sfx/battle_defeat.mp3",
+      "volume": 0.65,
+      "duration": 0.8,
+      "category": "battle",
+      "source": {
+        "name": "Lose Jingle",
+        "url": "https://freesound.org/people/deleted_user_877451/sounds/265133/",
+        "license": "CC0 (Public Domain)",
+        "keywords": "defeat, lose, sad, jingle, gameover"
+      }
     },
     {
-      "id": "sfx_success",
-      "name": "成功音效",
-      "file": "audio/sfx_success.mp3",
-      "volume": 0.8
+      "id": "sfx_gacha_normal",
+      "name": "普通抽卡",
+      "description": "单抽普通/稀有结果的音效",
+      "file": "audio/sfx/gacha_normal.mp3",
+      "volume": 0.75,
+      "duration": 1.0,
+      "category": "gacha",
+      "source": {
+        "name": "Card Draw",
+        "url": "https://freesound.org/people/f4ngy/sounds/240776/",
+        "license": "CC0 (Public Domain)",
+        "keywords": "card, draw, flip, reveal, gacha"
+      }
+    },
+    {
+      "id": "sfx_gacha_rare",
+      "name": "稀有抽卡",
+      "description": "抽到SR级萌宠的华丽音效",
+      "file": "audio/sfx/gacha_rare.mp3",
+      "volume": 0.9,
+      "duration": 1.5,
+      "category": "gacha",
+      "source": {
+        "name": "Rare Pull",
+        "url": "https://freesound.org/people/Tuudurt/sounds/456363/",
+        "license": "CC0 (Public Domain)",
+        "keywords": "rare, special, magic, sparkle, reveal"
+      }
+    },
+    {
+      "id": "sfx_gacha_ssr",
+      "name": "传说抽卡",
+      "description": "抽到SSR/UR级萌宠的终极华丽音效",
+      "file": "audio/sfx/gacha_legendary.mp3",
+      "volume": 1.0,
+      "duration": 2.5,
+      "category": "gacha",
+      "source": {
+        "name": "Legendary Pull",
+        "url": "https://freesound.org/people/frankum/sounds/414359/",
+        "license": "CC0 (Public Domain)",
+        "keywords": "legendary, epic, climax, reveal, celebration"
+      }
+    },
+    {
+      "id": "sfx_merge",
+      "name": "合成音效",
+      "description": "萌宠合成/进化时的魔法音效",
+      "file": "audio/sfx/pet_merge.mp3",
+      "volume": 0.85,
+      "duration": 1.0,
+      "category": "pet",
+      "source": {
+        "name": "Magical Merge",
+        "url": "https://freesound.org/people/Joao_Janz/sounds/492649/",
+        "license": "CC0 (Public Domain)",
+        "keywords": "merge, combine, magic, evolve, transformation"
+      }
+    },
+    {
+      "id": "sfx_evolve",
+      "name": "进化音效",
+      "description": "萌宠进化时的华丽变身音效",
+      "file": "audio/sfx/pet_evolve.mp3",
+      "volume": 0.9,
+      "duration": 1.5,
+      "category": "pet",
+      "source": {
+        "name": "Evolution Complete",
+        "url": "https://freesound.org/people/EminYILDIRIM/sounds/544348/",
+        "license": "CC0 (Public Domain)",
+        "keywords": "evolve, evolution, transform, magic, levelup"
+      }
+    },
+    {
+      "id": "sfx_levelup",
+      "name": "升级音效",
+      "description": "萌宠/玩家等级提升的音效",
+      "file": "audio/sfx/pet_levelup.mp3",
+      "volume": 0.8,
+      "duration": 0.7,
+      "category": "pet",
+      "source": {
+        "name": "Level Up",
+        "url": "https://freesound.org/people/EVRetro/sounds/533034/",
+        "license": "CC0 (Public Domain)",
+        "keywords": "levelup, chime, positive, upgrade, progress"
+      }
+    },
+    {
+      "id": "sfx_summon",
+      "name": "召唤音效",
+      "description": "萌宠出场召唤音效",
+      "file": "audio/sfx/pet_summon.mp3",
+      "volume": 0.8,
+      "duration": 0.8,
+      "category": "pet",
+      "source": {
+        "name": "Summon Creature",
+        "url": "https://freesound.org/people/altfuture/sounds/174607/",
+        "license": "CC BY-NC 3.0",
+        "keywords": "summon, appear, magic, creature, spawn"
+      }
+    },
+    {
+      "id": "sfx_pet_rare",
+      "name": "稀有萌宠出现",
+      "description": "SR级以上稀有萌宠出现时的特效音",
+      "file": "audio/sfx/pet_rare_appear.mp3",
+      "volume": 0.95,
+      "duration": 1.5,
+      "category": "pet",
+      "source": {
+        "name": "Rare Appearance",
+        "url": "https://freesound.org/people/Headphaze/sounds/277091/",
+        "license": "CC0 (Public Domain)",
+        "keywords": "rare, epic, appear, special, legendary"
+      }
+    },
+    {
+      "id": "sfx_coin",
+      "name": "金币音效",
+      "description": "获取金币时的音效",
+      "file": "audio/sfx/reward_coin.mp3",
+      "volume": 0.7,
+      "duration": 0.3,
+      "category": "reward",
+      "source": {
+        "name": "Coin Collect",
+        "url": "https://freesound.org/people/ProjectsU012/sounds/341695/",
+        "license": "CC0 (Public Domain)",
+        "keywords": "coin, collect, money, reward, pickup"
+      }
+    },
+    {
+      "id": "sfx_diamond",
+      "name": "钻石音效",
+      "description": "获取钻石时的清脆音效",
+      "file": "audio/sfx/reward_diamond.mp3",
+      "volume": 0.8,
+      "duration": 0.4,
+      "category": "reward",
+      "source": {
+        "name": "Gem Collect",
+        "url": "https://freesound.org/people/qubodup/sounds/219068/",
+        "license": "CC0 (Public Domain)",
+        "keywords": "gem, diamond, collect, crystal, shiny"
+      }
+    },
+    {
+      "id": "sfx_reward",
+      "name": "获得奖励",
+      "description": "完成任务/领取奖励音效",
+      "file": "audio/sfx/reward_get.mp3",
+      "volume": 0.8,
+      "duration": 0.6,
+      "category": "reward",
+      "source": {
+        "name": "Reward Jingle",
+        "url": "https://freesound.org/people/rhodesmas/sounds/320775/",
+        "license": "CC BY 3.0",
+        "keywords": "reward, get, collect, positive, jingle"
+      }
+    },
+    {
+      "id": "sfx_task_complete",
+      "name": "任务完成",
+      "description": "每日/成就任务完成的提示音",
+      "file": "audio/sfx/ui_task_complete.mp3",
+      "volume": 0.75,
+      "duration": 0.5,
+      "category": "reward",
+      "source": {
+        "name": "Quest Complete",
+        "url": "https://freesound.org/people/sonniss.com/sounds/251616/",
+        "license": "CC0 (Public Domain)",
+        "keywords": "quest, complete, achievement, task, done"
+      }
     },
     {
       "id": "sfx_buy",
       "name": "购买音效",
-      "file": "audio/sfx_buy.mp3",
-      "volume": 0.7
-    },
-    {
-      "id": "sfx_wave_clear",
-      "name": "波次清理",
-      "file": "audio/sfx_wave_clear.mp3",
-      "volume": 0.8
+      "description": "商店购买物品音效",
+      "file": "audio/sfx/ui_buy.mp3",
+      "volume": 0.7,
+      "duration": 0.4,
+      "category": "ui",
+      "source": {
+        "name": "Purchase Sound",
+        "url": "https://freesound.org/people/kwahmah_02/sounds/254174/",
+        "license": "CC0 (Public Domain)",
+        "keywords": "buy, purchase, cash, register, shop"
+      }
     }
-  ]
+  ],
+  "audioGroups": {
+    "bgm": ["bgm_main", "bgm_battle", "bgm_gacha", "bgm_victory", "bgm_defeat", "bgm_shop", "bgm_rank"],
+    "ui": ["sfx_click", "sfx_popup", "sfx_close", "sfx_success", "sfx_error", "sfx_buy", "sfx_task_complete"],
+    "battle": ["sfx_attack", "sfx_hit", "sfx_skill_fire", "sfx_skill_water", "sfx_skill_grass", "sfx_skill_light", "sfx_skill_dark", "sfx_crit", "sfx_heal", "sfx_battle_win", "sfx_battle_lose"],
+    "gacha": ["sfx_gacha_normal", "sfx_gacha_rare", "sfx_gacha_ssr"],
+    "pet": ["sfx_summon", "sfx_evolve", "sfx_levelup", "sfx_merge", "sfx_pet_rare"],
+    "reward": ["sfx_coin", "sfx_diamond", "sfx_reward", "sfx_task_complete"]
+  },
+  "settings": {
+    "masterVolume": 1.0,
+    "bgmVolume": 0.5,
+    "sfxVolume": 0.8,
+    "muteOnBackground": true,
+    "fadeDuration": 500,
+    "duckingEnabled": true,
+    "duckingVolume": 0.3,
+    "audioFileFormat": "mp3",
+    "preloadBgm": true,
+    "maxConcurrentSfx": 8
+  },
+  "freeResources": {
+    "websites": [
+      {
+        "name": "Freesound.org",
+        "url": "https://freesound.org/",
+        "description": "最大的免费音效社区，可搜索各种游戏音效",
+        "license": "多为CC0/CC-BY，注意查看具体授权"
+      },
+      {
+        "name": "OpenGameArt.org",
+        "url": "https://opengameart.org/",
+        "description": "免费游戏资源站，含丰富的BGM与音效包",
+        "license": "多为CC0/CC-BY/GPL，商用需确认"
+      },
+      {
+        "name": "ZapSplat",
+        "url": "https://www.zapsplat.com/",
+        "description": "专业免费音效库，提供高品质游戏音效",
+        "license": "免费账号需署名"
+      },
+      {
+        "name": "Mixkit",
+        "url": "https://mixkit.co/free-sound-effects/",
+        "description": "高质量免费音效，下载即用",
+        "license": "免费商用，无需署名"
+      },
+      {
+        "name": "Pixabay Sound Effects",
+        "url": "https://pixabay.com/sound-effects/",
+        "description": "海量免费音效，无需注册",
+        "license": "免费商用，无需署名(Pixabay License)"
+      }
+    ],
+    "recommendedPacks": [
+      {
+        "name": "200 Free Game SFX Pack",
+        "platform": "OpenGameArt",
+        "url": "https://opengameart.org/content/200-free-game-sound-effects",
+        "size": "~15MB",
+        "note": "含UI、战斗、魔法全类型音效"
+      },
+      {
+        "name": "Casual Game Music Pack",
+        "platform": "OpenGameArt",
+        "url": "https://opengameart.org/content/casual-game-music-pack",
+        "size": "~50MB",
+        "note": "多首休闲游戏BGM，适合萌宠游戏"
+      },
+      {
+        "name": "8Bit RPG Music Pack",
+        "platform": "OpenGameArt",
+        "url": "https://opengameart.org/content/8-bit-rpg-music-pack",
+        "size": "~30MB",
+        "note": "复古RPG配乐，含战斗/城镇/洞窟等各种主题"
+      }
+    ]
+  }
 }
