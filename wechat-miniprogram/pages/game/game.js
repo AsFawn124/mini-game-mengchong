@@ -1,0 +1,1809 @@
+// 萌宠大冒险 - 微信小程序版
+let canvas, ctx, W = 480, H = 800, scale = 1, offsetX = 0, offsetY = 0;
+let touchStartX2 = 0, touchStartY2 = 0, touchMoved = false;
+
+Page({
+  onReady() {
+    const query = wx.createSelectorQuery();
+    query.select('#gameCanvas')
+      .fields({ node: true, size: true })
+      .exec((res) => {
+        if (!res[0]) return;
+        canvas = res[0].node;
+        ctx = canvas.getContext('2d');
+        resize();
+        loadState();
+        saveState();
+        canvas.requestAnimationFrame(render);
+        console.log('🐾 萌宠大冒险 微信小程序版');
+      });
+  },
+
+  onTouchStart(e) {
+    initAudio();
+    const touch = e.touches[0];
+    const s = wx.getSystemInfoSync();
+    const cw = Math.min(s.windowWidth, s.windowHeight * 480 / 800);
+    const ch = cw * 800 / 480;
+    const ox = (s.windowWidth - cw) / 2, oy = (s.windowHeight - ch) / 2;
+    const sc = 480 / cw;
+    touchStartX2 = (touch.x - ox) * sc;
+    touchStartY2 = (touch.y - oy) * sc;
+    touchMoved = false;
+  },
+
+  onTouchMove(e) {
+    const touch = e.touches[0];
+    const s = wx.getSystemInfoSync();
+    const cw = Math.min(s.windowWidth, s.windowHeight * 480 / 800);
+    const ch = cw * 800 / 480;
+    const ox = (s.windowWidth - cw) / 2, oy = (s.windowHeight - ch) / 2;
+    const sc = 480 / cw;
+    const x = (touch.x - ox) * sc;
+    const y = (touch.y - oy) * sc;
+    if (state.screen === 'pokedex') {
+      const dy = y - touchStartY2;
+      pokedexScroll += dy;
+      pokedexScroll = Math.min(0, Math.max(-Math.max(0, pokedexTotalH - 800 + 100), pokedexScroll));
+      if (Math.abs(dy) > 5) touchMoved = true;
+    }
+    touchStartY2 = y;
+    touchStartX2 = x;
+  },
+
+  onTouchEnd(e) {
+    if (touchMoved || state.evolutionAnim) return;
+    const x = touchStartX2, y = touchStartY2;
+    if (x < 0 || x > 480 || y < 0 || y > 800) return;
+    const targets = getClickTargets();
+    for (let t of targets) {
+      if (hitTest(x, y, t.x, t.y, t.w, t.h)) { handleAction(t.action); return; }
+    }
+  },
+
+  onUnload() {
+    if (audioCtx) { try { audioCtx.close(); } catch (e) {} }
+  }
+});
+
+// ==================== PET DATA (embedded from pets_config_v2.json) ====================
+const PETS_CONFIG = {"version":"2.0.0","total":50,"pets":[
+{"id":"pet_001","name":"小火苗","rarity":"N","star":1,"element":"FIRE","baseAttack":10,"baseDefense":5,"baseHp":50,"skill":"火球术","skillDesc":"发射一枚小火球，造成攻击力100%的伤害","evolution":"pet_006","evolutionLevel":15,"description":"可爱的火焰精灵，拥有基础的火属性攻击能力。天性活泼好动，喜欢在篝火旁玩耍。"},
+{"id":"pet_002","name":"水滴仔","rarity":"N","star":1,"element":"WATER","baseAttack":8,"baseDefense":6,"baseHp":60,"skill":"水枪","skillDesc":"喷射高压水流，造成攻击力90%伤害并降低目标防御10%","evolution":"pet_007","evolutionLevel":15,"description":"清澈的水滴精灵，擅长防御和恢复。性格温和善良，总是乐于帮助伙伴。"},
+{"id":"pet_003","name":"绿叶怪","rarity":"N","star":1,"element":"GRASS","baseAttack":9,"baseDefense":5,"baseHp":55,"skill":"飞叶快刀","skillDesc":"发射锋利叶片，造成攻击力85%伤害并附加10点持续伤害","evolution":"pet_008","evolutionLevel":15,"description":"森林中的绿叶精灵，攻击速度快。喜欢在阳光下进行光合作用，充满生机。"},
+{"id":"pet_004","name":"闪电鼠","rarity":"N","star":1,"element":"FIRE","baseAttack":12,"baseDefense":4,"baseHp":45,"skill":"电击火花","skillDesc":"释放电流攻击，造成攻击力110%伤害，15%几率麻痹目标","evolution":"pet_009","evolutionLevel":15,"description":"敏捷的雷电精灵，攻击力较高但防御较弱。身手矫健，来去如风。"},
+{"id":"pet_005","name":"泡泡鱼","rarity":"N","star":1,"element":"WATER","baseAttack":7,"baseDefense":7,"baseHp":65,"skill":"泡沫护盾","skillDesc":"召唤泡沫护盾，吸收自身最大生命值15%的伤害，持续2回合","evolution":"pet_010","evolutionLevel":15,"description":"海洋中的泡泡精灵，生命值很高。虽然看起来柔弱，但防御力超强。"},
+{"id":"pet_006","name":"火焰喵","rarity":"R","star":2,"element":"FIRE","baseAttack":20,"baseDefense":10,"baseHp":100,"skill":"火焰喷射","skillDesc":"喷射烈焰，造成攻击力130%伤害，对草属性伤害增加50%","evolution":"pet_011","evolutionLevel":25,"description":"优雅的火焰猫咪，掌握强大的火系技能。傲娇又可爱，深受玩家喜爱。"},
+{"id":"pet_007","name":"冰霜兔","rarity":"R","star":2,"element":"WATER","baseAttack":18,"baseDefense":12,"baseHp":110,"skill":"冰冻陷阱","skillDesc":"设置冰冻陷阱，造成攻击力120%伤害，40%几率冻结目标1回合","evolution":"pet_012","evolutionLevel":25,"description":"可爱的冰霜兔子，能够冻结敌人。长耳朵是它的武器，也是它最萌的地方。"},
+{"id":"pet_008","name":"雷霆熊","rarity":"R","star":2,"element":"FIRE","baseAttack":25,"baseDefense":8,"baseHp":90,"skill":"闪电链","skillDesc":"释放闪电链攻击，对目标和相邻敌人造成攻击力100%的连锁伤害","evolution":"pet_013","evolutionLevel":25,"description":"威猛的雷霆巨熊，攻击威力惊人。虽然外表凶悍，但其实是个温柔的吃货。"},
+{"id":"pet_009","name":"治愈狐","rarity":"R","star":2,"element":"LIGHT","baseAttack":15,"baseDefense":14,"baseHp":120,"skill":"群体治疗","skillDesc":"释放治愈之光，为全体队友恢复自身最大生命值20%的HP","evolution":"pet_014","evolutionLevel":25,"description":"神秘的治愈狐狸，能够为队友恢复生命。温柔善良，是队伍中不可或缺的支持者。"},
+{"id":"pet_010","name":"暗影狼","rarity":"R","star":2,"element":"DARK","baseAttack":22,"baseDefense":9,"baseHp":95,"skill":"暗影突袭","skillDesc":"从暗影中突袭，造成攻击力140%伤害，无视目标30%防御","evolution":"pet_015","evolutionLevel":25,"description":"神秘的暗影之狼，擅长暗属性攻击。独来独往，但忠诚于认可的伙伴。"},
+{"id":"pet_011","name":"凤凰","rarity":"SR","star":3,"element":"FIRE","baseAttack":45,"baseDefense":20,"baseHp":200,"skill":"涅槃重生","skillDesc":"被动：死亡时有50%几率以50%生命值复活。主动：造成攻击力150%伤害","evolution":"pet_016","evolutionLevel":40,"description":"传说中的不死鸟，拥有重生的能力。绚丽的金红羽毛在天空中留下美丽的轨迹。"},
+{"id":"pet_012","name":"冰龙","rarity":"SR","star":3,"element":"WATER","baseAttack":40,"baseDefense":25,"baseHp":220,"skill":"绝对零度","skillDesc":"释放极寒之力，造成攻击力160%伤害，60%几率冻结目标2回合","evolution":"pet_017","evolutionLevel":40,"description":"远古的冰龙，能够冻结一切。虽然外表冰冷，但内心住着一个温柔的巨人。"},
+{"id":"pet_013","name":"雷麒麟","rarity":"SR","star":3,"element":"FIRE","baseAttack":50,"baseDefense":18,"baseHp":180,"skill":"雷霆万钧","skillDesc":"召唤天雷，对全体敌人造成攻击力130%伤害，并降低攻击力15%","evolution":"pet_018","evolutionLevel":40,"description":"神兽雷麒麟，掌控雷电之力。威严中带着一丝俏皮，是传说中的祥瑞之兽。"},
+{"id":"pet_014","name":"光天使","rarity":"SR","star":3,"element":"LIGHT","baseAttack":35,"baseDefense":30,"baseHp":250,"skill":"圣光普照","skillDesc":"降下圣光，驱散全体队友负面效果，并恢复30%生命值，同时造成攻击力100%伤害","evolution":"pet_019","evolutionLevel":40,"description":"神圣的光天使，拥有光明与治愈的力量。洁白的羽翼能驱散一切黑暗。"},
+{"id":"pet_015","name":"暗恶魔","rarity":"SR","star":3,"element":"DARK","baseAttack":55,"baseDefense":15,"baseHp":170,"skill":"黑暗吞噬","skillDesc":"吞噬目标的增益效果，造成攻击力170%伤害，并吸收造成伤害的30%为生命","evolution":"pet_020","evolutionLevel":40,"description":"来自深渊的恶魔，掌握黑暗魔法。桀骜不驯的外表下隐藏着一颗渴望被理解的心。"},
+{"id":"pet_016","name":"圣光天使","rarity":"SSR","star":4,"element":"LIGHT","baseAttack":80,"baseDefense":40,"baseHp":400,"skill":"神圣审判","skillDesc":"发动神圣审判，造成攻击力200%伤害，对暗属性伤害翻倍，并使目标沉默1回合","evolution":null,"evolutionLevel":0,"description":"最高位阶的天使，拥有神圣不可侵犯的力量。六翼展开时，光芒普照大地。"},
+{"id":"pet_017","name":"暗黑魔王","rarity":"SSR","star":4,"element":"DARK","baseAttack":90,"baseDefense":35,"baseHp":350,"skill":"毁灭黑洞","skillDesc":"制造黑洞，造成攻击力180%伤害，并降低目标30%防御和速度，持续2回合","evolution":null,"evolutionLevel":0,"description":"统治黑暗世界的魔王，力量毁天灭地。传说它的怒吼能让星辰为之颤抖。"},
+{"id":"pet_018","name":"元素龙王","rarity":"SSR","star":4,"element":"FIRE","baseAttack":85,"baseDefense":45,"baseHp":450,"skill":"元素风暴","skillDesc":"释放全元素风暴，造成攻击力220%伤害，并随机附加一种元素减益效果","evolution":null,"evolutionLevel":0,"description":"掌控所有元素的龙王，传说中的存在。龙鳞闪烁着七彩光芒，威严而美丽。"},
+{"id":"pet_019","name":"时空神兽","rarity":"SSR","star":4,"element":"LIGHT","baseAttack":75,"baseDefense":50,"baseHp":500,"skill":"时空扭曲","skillDesc":"扭曲时空，使敌方全体攻击延迟1回合，并造成攻击力150%伤害","evolution":null,"evolutionLevel":0,"description":"超越时空的神兽，能够操控时间。没人知道它来自哪个时代，只知道它无所不知。"},
+{"id":"pet_020","name":"创世神","rarity":"SSR","star":4,"element":"LIGHT","baseAttack":100,"baseDefense":60,"baseHp":600,"skill":"创世之光","skillDesc":"释放创世之力，造成攻击力250%伤害，并为我方全体恢复造成伤害50%的生命值","evolution":null,"evolutionLevel":0,"description":"创造世界的至高神，拥有无穷的力量。它的存在本身就是一个奇迹。"},
+{"id":"pet_021","name":"棉花糖兔","rarity":"N","star":1,"element":"GRASS","baseAttack":9,"baseDefense":6,"baseHp":52,"skill":"糖丝缠绕","skillDesc":"用棉花糖丝缠绕敌人，造成攻击力90%伤害并降低速度10%","evolution":"pet_031","evolutionLevel":15,"description":"像棉花糖一样蓬松柔软的可爱小兔，毛茸茸的触感让人忍不住想摸。性格甜美温和。"},
+{"id":"pet_022","name":"抹茶蛙","rarity":"N","star":1,"element":"GRASS","baseAttack":8,"baseDefense":7,"baseHp":58,"skill":"抹茶喷雾","skillDesc":"喷洒抹茶粉，造成攻击力80%伤害并降低目标命中率15%，持续2回合","evolution":"pet_032","evolutionLevel":15,"description":"住在荷叶上的抹茶色小青蛙，会发出清脆悦耳的叫声。背上的花纹像抹茶拉花。"},
+{"id":"pet_023","name":"奶糖鼠","rarity":"N","star":1,"element":"FIRE","baseAttack":11,"baseDefense":4,"baseHp":48,"skill":"奶糖爆弹","skillDesc":"扔出奶糖爆弹，造成攻击力105%伤害，15%使目标陷入甜腻状态","evolution":"pet_033","evolutionLevel":15,"description":"圆滚滚的小仓鼠，两腮总是塞满了食物。最爱的零食是奶糖，生气时会用奶糖砸人。"},
+{"id":"pet_024","name":"云朵羊","rarity":"N","star":1,"element":"WATER","baseAttack":7,"baseDefense":8,"baseHp":63,"skill":"棉花云盾","skillDesc":"召唤云朵保护队友，为目标吸收伤害，持续2回合","evolution":"pet_034","evolutionLevel":15,"description":"羊毛像云朵一样蓬松的小羊，漂浮在空中。性格温和安静，叫声软糯可爱。"},
+{"id":"pet_025","name":"布丁狗","rarity":"N","star":1,"element":"FIRE","baseAttack":10,"baseDefense":5,"baseHp":55,"skill":"布丁冲撞","skillDesc":"弹跳冲撞敌人，造成攻击力100%伤害，并回复自身10%最大生命值","evolution":"pet_035","evolutionLevel":15,"description":"像布丁一样Q弹的小柯基，走路时会弹跳。永远充满活力，爱撒娇。"},
+{"id":"pet_026","name":"樱花雀","rarity":"N","star":1,"element":"GRASS","baseAttack":10,"baseDefense":5,"baseHp":50,"skill":"花瓣风暴","skillDesc":"扇动翅膀制造花瓣风暴，造成攻击力95%伤害，回复友方全体5%生命","evolution":"pet_036","evolutionLevel":15,"description":"粉粉嫩嫩的小鸟，羽毛如同樱花般柔软。歌声婉转动听，是森林中的小歌唱家。"},
+{"id":"pet_027","name":"柠檬鸭","rarity":"N","star":1,"element":"WATER","baseAttack":8,"baseDefense":6,"baseHp":57,"skill":"柠檬酸液","skillDesc":"喷出柠檬酸液，造成攻击力85%伤害并降低目标防御20%，持续2回合","evolution":"pet_037","evolutionLevel":15,"description":"戴着柠檬装饰的小黄鸭，走起路来左摇右摆。最爱在柠檬水里游泳，自带清新香气。"},
+{"id":"pet_028","name":"菇菇鼹","rarity":"N","star":1,"element":"DARK","baseAttack":9,"baseDefense":6,"baseHp":53,"skill":"孢子地雷","skillDesc":"在地下埋设孢子地雷，敌人攻击时引爆造成攻击力120%伤害","evolution":"pet_038","evolutionLevel":15,"description":"头顶小蘑菇的鼹鼠，喜欢在地道里探险。蘑菇帽子是它最自豪的时尚单品。"},
+{"id":"pet_029","name":"海星贝","rarity":"N","star":1,"element":"WATER","baseAttack":7,"baseDefense":8,"baseHp":60,"skill":"贝壳屏障","skillDesc":"缩入贝壳中，本回合受到的伤害减少40%，下回合攻击力提升30%","evolution":"pet_039","evolutionLevel":15,"description":"住在闪亮贝壳里的粉色小海星，喜欢在沙滩上晒太阳。害羞时会完全缩进贝壳里。"},
+{"id":"pet_030","name":"竹叶熊","rarity":"N","star":1,"element":"GRASS","baseAttack":9,"baseDefense":7,"baseHp":62,"skill":"竹叶斩","skillDesc":"挥舞竹叶如利剑，造成攻击力110%伤害，暴击率+15%","evolution":"pet_040","evolutionLevel":15,"description":"抱着小竹子的迷你熊猫，圆滚滚的身体黑白分明。每天除了吃竹子就是卖萌。"},
+{"id":"pet_031","name":"宝石龟","rarity":"R","star":2,"element":"WATER","baseAttack":17,"baseDefense":15,"baseHp":125,"skill":"晶石反射","skillDesc":"利用宝石龟壳反射伤害，本回合受到伤害减少30%并反弹20%伤害给攻击者","evolution":"pet_041","evolutionLevel":25,"description":"背上镶嵌着蓝宝石的智慧乌龟，龟壳在阳光下闪闪发光。据说已活了数百年。"},
+{"id":"pet_032","name":"彩虹蝶","rarity":"R","star":2,"element":"LIGHT","baseAttack":19,"baseDefense":10,"baseHp":100,"skill":"虹光粉尘","skillDesc":"撒下彩虹粉尘，使敌方全体命中率降低20%并造成攻击力110%伤害","evolution":"pet_042","evolutionLevel":25,"description":"翅膀绚丽如彩虹的蝴蝶精灵，飞行时会留下闪烁的彩色粉尘。美丽而神秘。"},
+{"id":"pet_033","name":"铃铛鹿","rarity":"R","star":2,"element":"GRASS","baseAttack":18,"baseDefense":12,"baseHp":108,"skill":"治愈铃音","skillDesc":"摇响铃铛，为生命值最低的队友恢复其最大生命值25%，并解除一个负面效果","evolution":"pet_043","evolutionLevel":25,"description":"脖子上挂着金色铃铛的小鹿，铃音能治愈伤痛。角上开出季节的花朵，温柔优雅。"},
+{"id":"pet_034","name":"珍珠蚌","rarity":"R","star":2,"element":"WATER","baseAttack":16,"baseDefense":14,"baseHp":115,"skill":"珍珠之泪","skillDesc":"释放珍珠之力，为我方全体回复15%最大生命值，并清除自身所有负面状态","evolution":"pet_044","evolutionLevel":25,"description":"孕育着璀璨珍珠的神秘蚌壳精灵，珍珠的光芒能够驱散一切阴霾。"},
+{"id":"pet_035","name":"风铃鸟","rarity":"R","star":2,"element":"LIGHT","baseAttack":21,"baseDefense":9,"baseHp":95,"skill":"风铃奏鸣","skillDesc":"奏响风铃之歌，提升全体队友攻击力20%，持续3回合","evolution":"pet_045","evolutionLevel":25,"description":"尾巴像风铃一样会发出清脆声音的小鸟。歌声能让听众心情愉悦。"},
+{"id":"pet_036","name":"糖果猫","rarity":"R","star":2,"element":"FIRE","baseAttack":23,"baseDefense":9,"baseHp":93,"skill":"甜蜜陷阱","skillDesc":"制造糖果陷阱，造成攻击力135%伤害，50%几率使目标陷入甜蜜晕眩1回合","evolution":"pet_046","evolutionLevel":25,"description":"身上有糖果花纹的顽皮小猫，最爱恶作剧。它的爪垫闻起来像草莓糖。"},
+{"id":"pet_037","name":"月光狐","rarity":"R","star":2,"element":"LIGHT","baseAttack":20,"baseDefense":11,"baseHp":105,"skill":"月华之舞","skillDesc":"在月光下起舞，造成攻击力120%伤害，并为自身附加闪避加成30%，持续2回合","evolution":null,"evolutionLevel":0,"description":"额上有月牙印记的银色狐狸，在满月之夜会出现。优雅神秘，据说能实现愿望。"},
+{"id":"pet_038","name":"花环羊","rarity":"R","star":2,"element":"GRASS","baseAttack":17,"baseDefense":13,"baseHp":118,"skill":"花环祝福","skillDesc":"将花环投向队友，为目标恢复最大生命值30%并提升防御力25%，持续2回合","evolution":null,"evolutionLevel":0,"description":"头顶鲜花花环的薰衣草色小绵羊。走过的地方会开出小花，是森林中的小园丁。"},
+{"id":"pet_039","name":"灯笼鱼","rarity":"R","star":2,"element":"DARK","baseAttack":22,"baseDefense":8,"baseHp":92,"skill":"深潜闪光","skillDesc":"用灯笼发出强光，造成攻击力140%伤害并降低目标闪避率30%，持续2回合","evolution":null,"evolutionLevel":0,"description":"头上有发光灯笼的深海小鱼，在黑暗中为伙伴指引方向。虽然样子奇怪但心地善良。"},
+{"id":"pet_040","name":"绒球兔","rarity":"R","star":2,"element":"GRASS","baseAttack":18,"baseDefense":12,"baseHp":110,"skill":"绒球弹跳","skillDesc":"利用蓬松尾巴弹跳攻击，造成攻击力130%伤害，并为自身恢复15%最大生命值","evolution":null,"evolutionLevel":0,"description":"有着超级蓬松大尾巴的灰兔，尾巴像一个巨大的绒球。蹦蹦跳跳时格外可爱。"},
+{"id":"pet_041","name":"水晶独角兽","rarity":"SR","star":3,"element":"LIGHT","baseAttack":42,"baseDefense":28,"baseHp":230,"skill":"虹彩光辉","skillDesc":"从水晶角释放虹彩光芒，为我方全体恢复25%生命值并提升全属性15%，持续2回合","evolution":null,"evolutionLevel":0,"description":"拥有水晶角的神圣独角兽，鬃毛如彩虹般绚烂。它的蹄印会开出星光花朵。"},
+{"id":"pet_042","name":"火焰凤凰雏","rarity":"SR","star":3,"element":"FIRE","baseAttack":48,"baseDefense":20,"baseHp":195,"skill":"烈焰新生","skillDesc":"释放涅槃之火，造成攻击力180%伤害，若击杀目标则为自身回复50%生命值","evolution":null,"evolutionLevel":0,"description":"幼年的凤凰，火焰翅膀虽然还小但已经闪耀夺目。每次浴火都是一次新的成长。"},
+{"id":"pet_043","name":"冰霜雪豹","rarity":"SR","star":3,"element":"WATER","baseAttack":43,"baseDefense":24,"baseHp":210,"skill":"极寒领域","skillDesc":"展开极寒领域，对全体敌人造成攻击力140%伤害，40%几率冻结1回合","evolution":null,"evolutionLevel":0,"description":"生活在雪山之巅的冰雪猎豹，身上有冰晶花纹。静如处子，动如闪电。"},
+{"id":"pet_044","name":"雷电飞马","rarity":"SR","star":3,"element":"FIRE","baseAttack":52,"baseDefense":17,"baseHp":185,"skill":"雷霆冲锋","skillDesc":"裹挟雷电发起冲锋，造成攻击力200%伤害，但自身损失10%当前生命值","evolution":null,"evolutionLevel":0,"description":"身披雷电羽翼的天马，翱翔于雷云之间。每一次振翅都会引发雷鸣电闪。"},
+{"id":"pet_045","name":"暗影龙猫","rarity":"SR","star":3,"element":"DARK","baseAttack":50,"baseDefense":16,"baseHp":175,"skill":"暗影分身","skillDesc":"制造暗影分身，本回合攻击两次，第二次伤害为第一次的60%","evolution":null,"evolutionLevel":0,"description":"融合了龙与猫特征的暗影生物，能在阴影中自由穿梭。紫色的眼睛闪烁着智慧的光芒。"},
+{"id":"pet_046","name":"神圣天龙","rarity":"SSR","star":4,"element":"LIGHT","baseAttack":82,"baseDefense":42,"baseHp":420,"skill":"天龙神威","skillDesc":"释放天龙神威，造成攻击力230%伤害，获得一个护盾，持续2回合","evolution":null,"evolutionLevel":0,"description":"居住在云霄之上的圣龙，鳞片散发着金色的神辉。人们向它祈求风调雨顺。"},
+{"id":"pet_047","name":"混沌麒麟","rarity":"SSR","star":4,"element":"DARK","baseAttack":88,"baseDefense":38,"baseHp":380,"skill":"混沌领域","skillDesc":"展开混沌领域，3回合内我方全体攻击附带暗属性追加伤害","evolution":null,"evolutionLevel":0,"description":"传说中的瑞兽，身上流转着混沌星云。它的出现预示着世界的重大转折。"},
+{"id":"pet_048","name":"九尾灵狐","rarity":"SSR","star":4,"element":"LIGHT","baseAttack":78,"baseDefense":45,"baseHp":460,"skill":"九尾幻境","skillDesc":"制造九尾幻境，使敌方全体陷入混乱，持续2回合，并造成攻击力160%伤害","evolution":null,"evolutionLevel":0,"description":"修行千年的九尾灵狐，每一条尾巴都蕴含着一种元素之力。智慧与美丽并存的古老存在。"},
+{"id":"pet_049","name":"创世精灵王","rarity":"UR","star":5,"element":"LIGHT","baseAttack":110,"baseDefense":65,"baseHp":650,"skill":"万物复苏","skillDesc":"唤醒生命本源，复活所有阵亡队友，并为全体恢复40%最大生命值","evolution":null,"evolutionLevel":0,"description":"掌管生命与创造的精灵之王，传说它的一滴眼泪可以让枯木逢春。极低概率出现的传说存在。"},
+{"id":"pet_050","name":"虚空凤凰","rarity":"UR","star":5,"element":"DARK","baseAttack":120,"baseDefense":55,"baseHp":580,"skill":"虚空湮灭","skillDesc":"释放虚空之力，造成攻击力280%伤害，无视任何免死和护盾效果","evolution":null,"evolutionLevel":0,"description":"从虚空诞生又回归虚空的究极凤凰，每一次湮灭与重生都让它的力量更加强大。传说中的传说。"}
+],"elements":{"FIRE":{"name":"火","color":"#FF5722","strongAgainst":"GRASS","weakAgainst":"WATER"},"WATER":{"name":"水","color":"#2196F3","strongAgainst":"FIRE","weakAgainst":"GRASS"},"GRASS":{"name":"草","color":"#4CAF50","strongAgainst":"WATER","weakAgainst":"FIRE"},"LIGHT":{"name":"光","color":"#FFEB3B","strongAgainst":"DARK","weakAgainst":"DARK"},"DARK":{"name":"暗","color":"#673AB7","strongAgainst":"LIGHT","weakAgainst":"LIGHT"}}};
+
+const RARITY_ORDER = ['N','R','SR','SSR','UR'];
+const RARITY_COLORS = {'UR':'#FF4500','SSR':'#FFD700','SR':'#C0C0C0','R':'#CD7F32','N':'#808080'};
+const RARITY_NAMES = {'UR':'神话','SSR':'传说','SR':'史诗','R':'稀有','N':'普通'};
+const RARITY_RATES = {'N':0.55,'R':0.28,'SR':0.12,'SSR':0.04,'UR':0.01};
+const ELEMENT_COLORS = {'FIRE':'#FF5722','WATER':'#2196F3','GRASS':'#4CAF50','LIGHT':'#FFD700','DARK':'#9C27B0'};
+const ELEMENT_NAMES = {'FIRE':'火','WATER':'水','GRASS':'草','LIGHT':'光','DARK':'暗'};
+const ELEMENT_ICONS = {'FIRE':'🔥','WATER':'💧','GRASS':'🌿','LIGHT':'✨','DARK':'🌑'};
+const MAX_TEAM_SIZE = 6;
+const EXP_PER_LEVEL = 100;
+
+// ==================== STAGE CONFIGURATIONS ====================
+const STAGE_CONFIGS = [
+  {id:'stage_1',name:'新手草原',unlockLevel:1,waves:3,bg:'#e8f5e9',bgGradient:['#c8e6c9','#e8f5e9'],boss:{id:'pet_010',level:5,name:'暗影狼王',nameColor:'#9C27B0'},rewards:{gold:100,exp:80,stones:2}},
+  {id:'stage_2',name:'幽暗森林',unlockLevel:5,waves:4,bg:'#e8f5e9',bgGradient:['#a5d6a7','#e8f5e9'],boss:{id:'pet_015',level:8,name:'暗恶魔',nameColor:'#9C27B0'},rewards:{gold:200,exp:150,stones:3}},
+  {id:'stage_3',name:'烈焰沙漠',unlockLevel:10,waves:4,bg:'#fff3e0',bgGradient:['#ffcc80','#fff3e0'],boss:{id:'pet_011',level:12,name:'凤凰王',nameColor:'#FF5722'},rewards:{gold:300,exp:250,stones:4}},
+  {id:'stage_4',name:'冰霜雪原',unlockLevel:15,waves:5,bg:'#e3f2fd',bgGradient:['#90caf9','#e3f2fd'],boss:{id:'pet_012',level:16,name:'冰龙',nameColor:'#2196F3'},rewards:{gold:400,exp:350,stones:5}},
+  {id:'stage_5',name:'雷霆山脉',unlockLevel:20,waves:5,bg:'#f3e5f5',bgGradient:['#ce93d8','#f3e5f5'],boss:{id:'pet_013',level:20,name:'雷麒麟',nameColor:'#FF5722'},rewards:{gold:500,exp:500,stones:6}},
+  {id:'stage_6',name:'圣光神殿',unlockLevel:25,waves:6,bg:'#fff9c4',bgGradient:['#fff176','#fff9c4'],boss:{id:'pet_016',level:25,name:'圣光天使',nameColor:'#FFD700'},rewards:{gold:800,exp:700,stones:8}},
+  {id:'stage_7',name:'混沌深渊',unlockLevel:30,waves:7,bg:'#1a1a2e',bgGradient:['#0d0d1a','#1a1a2e'],boss:{id:'pet_020',level:35,name:'创世神',nameColor:'#FF4500'},rewards:{gold:1500,exp:1200,stones:12}}
+];
+
+// ==================== QUEST CONFIGURATIONS ====================
+const QUEST_CONFIGS = [
+  {id:'q_battle',name:'完成任意战斗',desc:'完成任意战斗1次',target:1,reward:{gold:30},type:'daily'},
+  {id:'q_gacha',name:'抽卡达人',desc:'完成抽卡3次',target:3,reward:{gold:20},type:'daily'},
+  {id:'q_synthesis',name:'合成大师',desc:'完成1次合成',target:1,reward:{gold:30,diamond:1},type:'daily'},
+  {id:'q_stage',name:'关卡挑战者',desc:'通过任意关卡',target:1,reward:{gold:50},type:'daily'},
+  {id:'q_collect_10',name:'萌宠收藏家Lv1',desc:'收集萌宠总数达到10只',target:10,reward:{gold:100},type:'permanent'},
+  {id:'q_collect_25',name:'萌宠收藏家Lv2',desc:'收集萌宠总数达到25只',target:25,reward:{gold:200,diamond:3},type:'permanent'},
+  {id:'q_collect_40',name:'萌宠收藏家Lv3',desc:'收集萌宠总数达到40只',target:40,reward:{gold:500,diamond:5},type:'permanent'},
+  {id:'q_login',name:'每日签到',desc:'今日登录',target:1,reward:{stamina:10},type:'daily'}
+];
+
+// ==================== CANVAS SETUP ====================
+
+function resize(){
+  const s=wx.getSystemInfoSync();
+  const r=s.pixelRatio||1;
+  const aspect=480/800;
+  // Display size that fits aspect ratio
+  let cw,ch;
+  if(s.windowWidth/s.windowHeight>aspect){ch=s.windowHeight;cw=ch*aspect}else{cw=s.windowWidth;ch=cw/aspect}
+  canvas.width=cw*r;canvas.height=ch*r;
+  ctx.setTransform(cw/480*r,0,0,ch/800*r,0,0);
+  offsetX=(s.windowWidth-cw)/2;offsetY=(s.windowHeight-ch)/2;
+}
+wx.onWindowResize(()=>resize());
+
+// ==================== SOUND SYSTEM ====================
+let audioCtx = null;
+function initAudio(){if(!audioCtx){try{audioCtx=wx.createWebAudioContext()}catch(e){}}}
+function playSound(type){
+  if(!audioCtx)initAudio();if(!audioCtx)return;
+  const t=audioCtx.currentTime;
+  const g=audioCtx.createGain();g.connect(audioCtx.destination);g.gain.value=0.2;
+  const o=audioCtx.createOscillator();
+  switch(type){
+    case 'click':o.type='sine';o.frequency.setValueAtTime(800,t);o.frequency.exponentialRampToValueAtTime(400,t+0.06);o.connect(g);o.start(t);o.stop(t+0.06);break;
+    case 'gacha_spin':for(let i=0;i<8;i++){const o2=audioCtx.createOscillator();o2.type='square';o2.frequency.value=200+i*50;const g2=audioCtx.createGain();g2.gain.value=0.03;g2.connect(audioCtx.destination);o2.connect(g2);o2.start(t+i*0.04);o2.stop(t+i*0.04+0.03)}break;
+    case 'ssr':for(let i=0;i<5;i++){const o2=audioCtx.createOscillator();o2.type='sine';o2.frequency.value=400+i*200;const g2=audioCtx.createGain();g2.gain.value=0.08;g2.connect(audioCtx.destination);o2.connect(g2);o2.start(t+i*0.08);o2.stop(t+i*0.08+0.07)}break;
+    case 'ur':for(let i=0;i<8;i++){const o2=audioCtx.createOscillator();o2.type='triangle';o2.frequency.value=300+i*150;const g2=audioCtx.createGain();g2.gain.value=0.06;g2.connect(audioCtx.destination);o2.connect(g2);o2.start(t+i*0.06);o2.stop(t+i*0.06+0.06)}break;
+    case 'attack':o.type='sawtooth';o.frequency.setValueAtTime(300,t);o.frequency.exponentialRampToValueAtTime(80,t+0.08);g.gain.setValueAtTime(0.15,t);g.gain.exponentialRampToValueAtTime(0.01,t+0.08);o.connect(g);o.start(t);o.stop(t+0.08);break;
+    case 'victory':for(let i=0;i<3;i++){const o2=audioCtx.createOscillator();o2.type='sine';o2.frequency.value=[523,659,784][i];const g2=audioCtx.createGain();g2.gain.value=0.1;g2.connect(audioCtx.destination);o2.connect(g2);o2.start(t+i*0.15);o2.stop(t+i*0.15+0.13)}break;
+    case 'synthesis':o.type='sine';o.frequency.setValueAtTime(600,t);o.frequency.exponentialRampToValueAtTime(1200,t+0.2);g.gain.setValueAtTime(0.1,t);g.gain.exponentialRampToValueAtTime(0.01,t+0.25);o.connect(g);o.start(t);o.stop(t+0.25);break;
+    case 'stage_clear':for(let i=0;i<4;i++){const o2=audioCtx.createOscillator();o2.type='sine';o2.frequency.value=[392,523,659,784][i];const g2=audioCtx.createGain();g2.gain.value=0.1;g2.connect(audioCtx.destination);o2.connect(g2);o2.start(t+i*0.18);o2.stop(t+i*0.18+0.16)}break;
+    case 'evolution':for(let i=0;i<6;i++){const o2=audioCtx.createOscillator();o2.type='sine';o2.frequency.value=300+i*120;const g2=audioCtx.createGain();g2.gain.value=0.07;g2.connect(audioCtx.destination);o2.connect(g2);o2.start(t+i*0.1);o2.stop(t+i*0.1+0.13)}break;
+    case 'quest_complete':o.type='triangle';o.frequency.setValueAtTime(500,t);o.frequency.setValueAtTime(700,t+0.08);o.frequency.setValueAtTime(900,t+0.16);g.gain.value=0.1;o.connect(g);o.start(t);o.stop(t+0.22);break;
+    case 'error':o.type='square';o.frequency.setValueAtTime(200,t);o.frequency.exponentialRampToValueAtTime(100,t+0.15);g.gain.value=0.08;o.connect(g);o.start(t);o.stop(t+0.15);break;
+  }
+}
+
+// ==================== GAME STATE ====================
+let state = {
+  gold:200, diamond:10, stamina:100, maxStamina:100,
+  ownedPets:[],
+  team:[],
+  totalPulls:0,
+  screen:'hub',
+  subScreen:null,
+  selectedPetUid:null,
+  battleState:null,
+  animations:[],
+  messages:[],
+  modal:null,
+  synthesisSource:null,
+  lastSave:0,
+  // NEW FIELDS
+  unlockedStages:{},
+  stageStars:{},
+  evolutionStones:0,
+  quests:{},
+  dailyResetDate:'',
+  prevScreen:'hub',
+  screenTransition:0,
+  bounceNumbers:[],
+  saveIndicatorTimer:0,
+  evolutionAnim:null
+};
+
+function uid(){return 'p'+Date.now()+'_'+Math.random().toString(36).slice(2,8)}
+
+function getPetConfig(petId){return PETS_CONFIG.pets.find(p=>p.id===petId)}
+function getPetConfigById(petId){return PETS_CONFIG.pets.find(p=>p.id===petId)}
+function getOwnedPetByUid(uid){return state.ownedPets.find(p=>p.uid===uid)}
+function getPetStats(pet){
+  const cfg=getPetConfig(pet.id);
+  const levelMult=1+(pet.level-1)*0.1;
+  return{
+    attack:Math.floor(cfg.baseAttack*levelMult),
+    defense:Math.floor(cfg.baseDefense*levelMult),
+    hp:Math.floor(cfg.baseHp*levelMult),
+    maxHp:Math.floor(cfg.baseHp*levelMult),
+    skill:cfg.skill,skillDesc:cfg.skillDesc,
+    element:cfg.element,name:cfg.name,
+    rarity:cfg.rarity,star:cfg.star,
+    level:pet.level,exp:pet.exp,
+    description:cfg.description,
+    evolution:cfg.evolution,
+    evolutionLevel:cfg.evolutionLevel
+  };
+}
+
+function getTeamAvgLevel(){
+  const teamPets=state.team.map(uid=>getOwnedPetByUid(uid)).filter(Boolean);
+  if(teamPets.length===0)return 1;
+  return Math.floor(teamPets.reduce((s,p)=>s+p.level,0)/teamPets.length);
+}
+
+function getHighestUnlockedStage(){
+  let highest=null;
+  for(let i=0;i<STAGE_CONFIGS.length;i++){
+    const sc=STAGE_CONFIGS[i];
+    if(i===0||state.unlockedStages[STAGE_CONFIGS[i-1].id]){
+      if(!state.unlockedStages[sc.id]&&getTeamAvgLevel()>=sc.unlockLevel)highest=sc;
+    }
+  }
+  return highest||STAGE_CONFIGS[0];
+}
+
+// ==================== SAVE/LOAD ====================
+function initDefaultQuests(){
+  const qs={};
+  QUEST_CONFIGS.forEach(q=>{qs[q.id]={progress:0,claimed:false}});
+  qs['q_login'].progress=1;
+  return qs;
+}
+
+function checkDailyReset(){
+  const today=new Date().toDateString();
+  if(state.dailyResetDate!==today){
+    state.dailyResetDate=today;
+    QUEST_CONFIGS.forEach(q=>{
+      if(q.type==='daily'){
+        if(!state.quests[q.id])state.quests[q.id]={progress:0,claimed:false};
+        else{state.quests[q.id].progress=0;state.quests[q.id].claimed=false;}
+      }
+    });
+    if(state.quests['q_login']){state.quests['q_login'].progress=1;state.quests['q_login'].claimed=false;}
+  }
+}
+
+function loadState(){
+  try{
+    const s=wx.getStorageSync('pet_adventure_save_v2');
+    if(s){
+      const parsed=JSON.parse(s);
+      Object.assign(state,parsed);
+      if(!state.stamina)state.stamina=state.maxStamina||100;
+      if(!state.maxStamina)state.maxStamina=100;
+      if(!state.team)state.team=[];
+      if(!state.animations)state.animations=[];
+      if(!state.messages)state.messages=[];
+      if(!state.screen)state.screen='hub';
+      if(!state.unlockedStages)state.unlockedStages={};
+      if(!state.stageStars)state.stageStars={};
+      if(state.evolutionStones===undefined)state.evolutionStones=0;
+      if(!state.quests)state.quests=initDefaultQuests();
+      if(!state.dailyResetDate)state.dailyResetDate='';
+      if(!state.bounceNumbers)state.bounceNumbers=[];
+      if(!state.evolutionAnim)state.evolutionAnim=null;
+      if(!state.prevScreen)state.prevScreen='hub';
+      if(!state.screenTransition)state.screenTransition=0;
+      if(state.saveIndicatorTimer===undefined)state.saveIndicatorTimer=0;
+    }else{
+      // Try old save
+      const old=wx.getStorageSync('pet_adventure_save');
+      if(old){
+        const op=JSON.parse(old);
+        state.gold=op.gold||200;state.diamond=op.diamond||10;
+        state.stamina=op.stamina||100;state.maxStamina=op.maxStamina||100;
+        state.ownedPets=op.ownedPets||[];state.team=op.team||[];
+        state.totalPulls=op.totalPulls||0;
+        state.unlockedStages={};state.stageStars={};
+        state.evolutionStones=0;state.quests=initDefaultQuests();
+        state.dailyResetDate='';
+      }
+    }
+  }catch(e){console.error('Load failed:',e)}
+  if(state.ownedPets.length===0){
+    const starters=['pet_001','pet_002','pet_003'];
+    starters.forEach(pid=>{state.ownedPets.push({id:pid,uid:uid(),level:1,exp:0,isInTeam:true})});
+    state.team=state.ownedPets.map(p=>p.uid);
+    state.gold=200;state.diamond=10;
+  }
+  if(!state.quests||Object.keys(state.quests).length===0)state.quests=initDefaultQuests();
+  checkDailyReset();
+  state.ownedPets.forEach(p=>{p.isInTeam=state.team.includes(p.uid)});
+}
+
+function saveState(){
+  const s={
+    gold:state.gold,diamond:state.diamond,stamina:state.stamina,maxStamina:state.maxStamina,
+    ownedPets:state.ownedPets,team:state.team,totalPulls:state.totalPulls,
+    screen:state.screen,unlockedStages:state.unlockedStages,stageStars:state.stageStars,
+    evolutionStones:state.evolutionStones,quests:state.quests,dailyResetDate:state.dailyResetDate
+  };
+  try{wx.setStorageSync('pet_adventure_save_v2',JSON.stringify(s))}catch(e){}
+  state.saveIndicatorTimer=30;
+}
+
+function showSaveIndicator(){/* rendered on canvas */}
+setInterval(()=>{
+  if(state.saveIndicatorTimer>0){state.saveIndicatorTimer--;showSaveIndicator()}
+  // Auto-save every 30s
+  if(frame%1800===0&&frame>0)saveState();
+},1000);
+
+loadState();saveState();
+
+// ==================== NOTIFICATION SYSTEM ====================
+function addMessage(msg, color, icon) {
+  if (!state.messages) state.messages = [];
+  const iconMap = { success: '✅', error: '❌', warning: '⚠️', celebration: '🎉', gold: '💰', diamond: '💎', star: '⭐', evo: '⚡' };
+  const prefix = icon ? (iconMap[icon] || icon) + ' ' : '';
+  state.messages.push({ text: prefix + msg, color: color || '#333', timer: 120 });
+  let isRare = msg.includes('SSR') || msg.includes('传说');
+  if (msg.includes('UR') || msg.includes('神话')) isRare = true;
+  if (isRare) playSound(msg.includes('UR') ? 'ur' : 'ssr');
+}
+
+function addBounceNum(amount,type='gold'){
+  state.bounceNumbers.push({amount,type,x:W/2,y:80,alpha:1,life:0});
+}
+
+// ==================== QUEST SYSTEM ====================
+function updateQuestProgress(questId,amount){
+  if(!state.quests[questId])state.quests[questId]={progress:0,claimed:false};
+  if(state.quests[questId].claimed)return;
+  const cfg=QUEST_CONFIGS.find(q=>q.id===questId);
+  if(!cfg)return;
+  if(cfg.type==='permanent')state.quests[questId].progress=Math.max(state.quests[questId].progress,state.ownedPets.length);
+  else state.quests[questId].progress=Math.min(cfg.target,state.quests[questId].progress+amount);
+}
+function canClaimQuest(questId){
+  if(!state.quests[questId])return false;
+  if(state.quests[questId].claimed)return false;
+  const cfg=QUEST_CONFIGS.find(q=>q.id===questId);
+  return cfg&&state.quests[questId].progress>=cfg.target;
+}
+function claimQuest(questId){
+  if(!canClaimQuest(questId))return;
+  const cfg=QUEST_CONFIGS.find(q=>q.id===questId);
+  state.quests[questId].claimed=true;
+  if(cfg.reward.gold){state.gold+=cfg.reward.gold;addBounceNum(cfg.reward.gold,'gold')}
+  if(cfg.reward.diamond){state.diamond+=cfg.reward.diamond;addBounceNum(cfg.reward.diamond,'diamond')}
+  if(cfg.reward.stamina){state.stamina=Math.min(state.maxStamina,state.stamina+cfg.reward.stamina);addBounceNum(cfg.reward.stamina,'stamina')}
+  addMessage('任务完成: '+cfg.name+'!','#4cd964','celebration');
+  playSound('quest_complete');
+  saveState();
+}
+
+// ==================== EVOLUTION SYSTEM ====================
+function canEvolvePet(pet){
+  const cfg=getPetConfig(pet.id);
+  if(!cfg.evolution)return false;
+  if(cfg.evolutionLevel<=0)return false;
+  if(pet.level<cfg.evolutionLevel)return false;
+  const stoneCost=cfg.rarity==='N'?5:cfg.rarity==='R'?10:cfg.rarity==='SR'?20:30;
+  if(state.evolutionStones<stoneCost)return false;
+  return true;
+}
+function getEvolutionStoneCost(rarity){
+  return rarity==='N'?5:rarity==='R'?10:rarity==='SR'?20:rarity==='SSR'?30:50;
+}
+function evolvePet(petUid){
+  const pet=getOwnedPetByUid(petUid);
+  if(!pet||!canEvolvePet(pet))return;
+  const cfg=getPetConfig(pet.id);
+  const stoneCost=getEvolutionStoneCost(cfg.rarity);
+  state.evolutionStones-=stoneCost;
+  const newId=cfg.evolution;
+  const newCfg=getPetConfig(newId);
+  state.evolutionAnim={petUid,oldId:pet.id,newId,oldName:cfg.name,newName:newCfg.name,newRarity:newCfg.rarity,timer:0,phase:'start'};
+  playSound('evolution');
+}
+
+function completeEvolution(){
+  if(!state.evolutionAnim)return;
+  const pet=getOwnedPetByUid(state.evolutionAnim.petUid);
+  if(!pet)return;
+  pet.id=state.evolutionAnim.newId;
+  pet.level=Math.min(99,pet.level+2+Math.floor(Math.random()*2));
+  state.evolutionAnim=null;
+  addMessage('进化成功！'+pet.name+'进化成了'+state.evolutionAnim?.newName+'！','#ffd700','evo');
+  saveState();
+}
+
+// ==================== ANIMATION SYSTEM ====================
+function addAnimation(anim){state.animations.push(anim)}
+
+// ==================== PET CANVAS DRAWING ====================
+function drawPetOnCanvas(ctx,x,y,size,petId,element,rarity,frame=0){
+  const colors={
+    FIRE:['#ff4444','#ff6b35','#ff8855','#ff2200'],
+    WATER:['#4488ff','#66aaff','#88ccff','#2266dd'],
+    GRASS:['#44cc44','#66dd66','#88ee88','#22aa22'],
+    LIGHT:['#ffdd44','#ffea66','#ffcc00','#ffaa00'],
+    DARK:['#9944cc','#aa66dd','#bb88ee','#7722aa']
+  };
+  const c=colors[element]||colors.FIRE;
+  const s=size;
+  ctx.save();ctx.translate(x,y);
+  const petNum=parseInt(petId.split('_')[1])||1;
+  const shapeType=petNum%5;
+  const glowColors={UR:'rgba(255,69,0,0.4)',SSR:'rgba(255,215,0,0.35)',SR:'rgba(192,192,192,0.25)',R:'rgba(205,127,50,0.2)',N:'rgba(128,128,128,0.1)'};
+  ctx.shadowColor=glowColors[rarity]||'rgba(0,0,0,0.1)';
+  ctx.shadowBlur=rarity==='UR'?18:rarity==='SSR'?14:rarity==='SR'?10:rarity==='R'?6:3;
+  ctx.fillStyle=c[0];ctx.strokeStyle=c[3];ctx.lineWidth=2;
+  switch(shapeType){
+    case 0:drawRoundBlob(ctx,s,c,frame);break;
+    case 1:drawCatLike(ctx,s,c,frame);break;
+    case 2:drawBunnyLike(ctx,s,c,frame);break;
+    case 3:drawStarLike(ctx,s,c,frame);break;
+    case 4:drawDragonLike(ctx,s,c,frame);break;
+  }
+  const eyeY=-s*0.05,eyeSpacing=s*0.18;
+  ctx.fillStyle='#fff';ctx.beginPath();ctx.ellipse(-eyeSpacing,eyeY,s*0.1,s*0.13,0,0,Math.PI*2);ctx.fill();
+  ctx.beginPath();ctx.ellipse(eyeSpacing,eyeY,s*0.1,s*0.13,0,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle='#222';
+  const pupilOffX=Math.cos(frame*0.05)*1,pupilOffY=Math.sin(frame*0.05)*0.5;
+  ctx.beginPath();ctx.arc(-eyeSpacing+pupilOffX,eyeY+pupilOffY,s*0.05,0,Math.PI*2);ctx.fill();
+  ctx.beginPath();ctx.arc(eyeSpacing+pupilOffX,eyeY+pupilOffY,s*0.05,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle='#fff';
+  ctx.beginPath();ctx.arc(-eyeSpacing-2,eyeY-2,s*0.02,0,Math.PI*2);ctx.fill();
+  ctx.beginPath();ctx.arc(eyeSpacing-2,eyeY-2,s*0.02,0,Math.PI*2);ctx.fill();
+  ctx.strokeStyle='#333';ctx.lineWidth=1.2;
+  ctx.beginPath();ctx.arc(0,eyeY+s*0.13,s*0.06,0.1,Math.PI-0.1);ctx.stroke();
+  ctx.fillStyle='rgba(255,150,150,0.35)';
+  ctx.beginPath();ctx.ellipse(-s*0.22,eyeY+s*0.05,s*0.06,s*0.04,0,0,Math.PI*2);ctx.fill();
+  ctx.beginPath();ctx.ellipse(s*0.22,eyeY+s*0.05,s*0.06,s*0.04,0,0,Math.PI*2);ctx.fill();
+  ctx.restore();
+}
+
+function drawRoundBlob(ctx,s,c,frame){
+  ctx.beginPath();const bob=Math.sin(frame*0.08)*s*0.03;
+  ctx.arc(0,bob,s*0.35,0,Math.PI*2);
+  const grad=ctx.createRadialGradient(-s*0.08,-s*0.08,s*0.02,0,0,s*0.38);
+  grad.addColorStop(0,c[1]);grad.addColorStop(1,c[0]);ctx.fillStyle=grad;ctx.fill();
+  ctx.strokeStyle=c[3];ctx.stroke();
+  for(let i=0;i<3;i++){const angle=-Math.PI*0.7+i*Math.PI*0.35;ctx.beginPath();ctx.arc(Math.cos(angle)*s*0.3,Math.sin(angle)*s*0.3+bob,s*0.08,0,Math.PI*2);ctx.fillStyle=c[1];ctx.fill();ctx.strokeStyle=c[3];ctx.stroke()}
+}
+function drawCatLike(ctx,s,c,frame){
+  ctx.beginPath();ctx.ellipse(0,0,s*0.3,s*0.32,0,0,Math.PI*2);
+  const grad=ctx.createRadialGradient(-s*0.05,-s*0.08,s*0.02,0,0,s*0.35);grad.addColorStop(0,c[1]);grad.addColorStop(1,c[0]);
+  ctx.fillStyle=grad;ctx.fill();ctx.strokeStyle=c[3];ctx.stroke();
+  ctx.beginPath();ctx.moveTo(-s*0.22,-s*0.15);ctx.lineTo(-s*0.15,-s*0.4);ctx.lineTo(-s*0.05,-s*0.18);ctx.closePath();ctx.fillStyle=c[1];ctx.fill();ctx.strokeStyle=c[3];ctx.stroke();
+  ctx.beginPath();ctx.moveTo(s*0.22,-s*0.15);ctx.lineTo(s*0.15,-s*0.4);ctx.lineTo(s*0.05,-s*0.18);ctx.closePath();ctx.fillStyle=c[1];ctx.fill();ctx.strokeStyle=c[3];ctx.stroke();
+  ctx.fillStyle='rgba(255,200,200,0.6)';ctx.beginPath();ctx.moveTo(-s*0.18,-s*0.18);ctx.lineTo(-s*0.14,-s*0.32);ctx.lineTo(-s*0.08,-s*0.2);ctx.closePath();ctx.fill();
+  ctx.beginPath();ctx.moveTo(s*0.18,-s*0.18);ctx.lineTo(s*0.14,-s*0.32);ctx.lineTo(s*0.08,-s*0.2);ctx.closePath();ctx.fill();
+}
+function drawBunnyLike(ctx,s,c,frame){
+  ctx.beginPath();ctx.ellipse(0,0,s*0.28,s*0.3,0,0,Math.PI*2);
+  const grad=ctx.createRadialGradient(-s*0.05,-s*0.08,s*0.02,0,0,s*0.32);grad.addColorStop(0,c[1]);grad.addColorStop(1,c[0]);
+  ctx.fillStyle=grad;ctx.fill();ctx.strokeStyle=c[3];ctx.stroke();
+  ctx.fillStyle=c[1];ctx.strokeStyle=c[3];
+  ctx.beginPath();ctx.ellipse(-s*0.1,-s*0.35,s*0.06,s*0.18,-0.2,0,Math.PI*2);ctx.fill();ctx.stroke();
+  ctx.beginPath();ctx.ellipse(s*0.1,-s*0.35,s*0.06,s*0.18,0.2,0,Math.PI*2);ctx.fill();ctx.stroke();
+  ctx.fillStyle='rgba(255,200,200,0.6)';ctx.beginPath();ctx.ellipse(-s*0.1,-s*0.35,s*0.03,s*0.12,-0.2,0,Math.PI*2);ctx.fill();
+  ctx.beginPath();ctx.ellipse(s*0.1,-s*0.35,s*0.03,s*0.12,0.2,0,Math.PI*2);ctx.fill();
+}
+function drawStarLike(ctx,s,c,frame){
+  const spikes=5;ctx.beginPath();
+  for(let i=0;i<spikes*2;i++){const r=i%2===0?s*0.32:s*0.22;const angle=(i*Math.PI/spikes-Math.PI/2)+Math.sin(frame*0.03)*0.05;const sx=Math.cos(angle)*r,sy=Math.sin(angle)*r;if(i===0)ctx.moveTo(sx,sy);else ctx.lineTo(sx,sy)}
+  ctx.closePath();const grad=ctx.createRadialGradient(0,0,s*0.05,0,0,s*0.35);grad.addColorStop(0,c[1]);grad.addColorStop(1,c[0]);ctx.fillStyle=grad;ctx.fill();ctx.strokeStyle=c[3];ctx.stroke();
+}
+function drawDragonLike(ctx,s,c,frame){
+  ctx.beginPath();ctx.ellipse(0,0,s*0.33,s*0.3,0,0,Math.PI*2);
+  const grad=ctx.createRadialGradient(-s*0.05,-s*0.08,s*0.02,0,0,s*0.33);grad.addColorStop(0,c[1]);grad.addColorStop(1,c[0]);ctx.fillStyle=grad;ctx.fill();ctx.strokeStyle=c[3];ctx.stroke();
+  ctx.strokeStyle=c[3];ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(-s*0.12,-s*0.2);ctx.lineTo(-s*0.2,-s*0.38);ctx.stroke();ctx.beginPath();ctx.moveTo(s*0.12,-s*0.2);ctx.lineTo(s*0.2,-s*0.38);ctx.stroke();
+  ctx.fillStyle=c[1];ctx.strokeStyle=c[3];
+  ctx.beginPath();ctx.moveTo(-s*0.2,s*0.0);ctx.quadraticCurveTo(-s*0.4,-s*0.05,-s*0.25,-s*0.35);ctx.quadraticCurveTo(-s*0.15,-s*0.15,-s*0.05,s*0.05);ctx.fill();ctx.stroke();
+  ctx.beginPath();ctx.moveTo(s*0.2,s*0.0);ctx.quadraticCurveTo(s*0.4,-s*0.05,s*0.25,-s*0.35);ctx.quadraticCurveTo(s*0.15,-s*0.15,s*0.05,s*0.05);ctx.fill();ctx.stroke();
+}
+
+// ==================== CANVAS HELPERS ====================
+function roundRect(x,y,w,h,r){
+  ctx.beginPath();ctx.moveTo(x+r,y);ctx.lineTo(x+w-r,y);ctx.quadraticCurveTo(x+w,y,x+w,y+r);
+  ctx.lineTo(x+w,y+h-r);ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);ctx.lineTo(x+r,y+h);
+  ctx.quadraticCurveTo(x,y+h,x,y+h-r);ctx.lineTo(x,y+r);ctx.quadraticCurveTo(x,y,x+r,y);ctx.closePath();
+}
+function drawButton(x,y,w,h,text,color='#ff6b8a',textColor='#fff',fontSize=14,scale=1){
+  ctx.save();
+  const cx=x+w/2,cy=y+h/2;
+  ctx.translate(cx,cy);ctx.scale(scale,scale);ctx.translate(-cx,-cy);
+  ctx.shadowColor='rgba(0,0,0,0.15)';ctx.shadowBlur=6;ctx.shadowOffsetY=2;
+  roundRect(x,y,w,h,h/3);
+  const grad=ctx.createLinearGradient(x,y,x,y+h);grad.addColorStop(0,color);grad.addColorStop(1,adjustColor(color,-20));
+  ctx.fillStyle=grad;ctx.fill();ctx.shadowColor='transparent';
+  ctx.fillStyle=textColor;ctx.font=`bold ${fontSize}px "PingFang SC","Microsoft YaHei",sans-serif`;
+  ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(text,cx,cy);
+  ctx.restore();
+}
+function drawSmallButton(x,y,w,h,text,color='#ff6b8a',textColor='#fff',fontSize=12){drawButton(x,y,w,h,text,color,textColor,fontSize)}
+function adjustColor(hex,d){
+  let r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16);
+  r=Math.max(0,Math.min(255,r+d));g=Math.max(0,Math.min(255,g+d));b=Math.max(0,Math.min(255,b+d));
+  return '#'+[r,g,b].map(v=>v.toString(16).padStart(2,'0')).join('');
+}
+function hitTest(x,y,rx,ry,rw,rh){return x>=rx&&x<=rx+rw&&y>=ry&&y<=ry+rh}
+
+// ==================== SCREEN: HUB (ENHANCED) ====================
+let hubButtons=[];
+function renderHub(frame){
+  const bgGrad=ctx.createLinearGradient(0,0,0,H);bgGrad.addColorStop(0,'#fff0f3');bgGrad.addColorStop(0.5,'#fff8f8');bgGrad.addColorStop(1,'#f0f4ff');
+  ctx.fillStyle=bgGrad;ctx.fillRect(0,0,W,H);
+  // Clouds
+  ctx.fillStyle='rgba(255,255,255,0.6)';
+  for(let i=0;i<3;i++){const cx=((frame*0.2+i*160)%(W+200))-100;ctx.beginPath();ctx.arc(cx,60+i*20,25+Math.sin(frame*0.02+i)*5,0,Math.PI*2);ctx.fill();ctx.beginPath();ctx.arc(cx+15,50+i*20,20,0,Math.PI*2);ctx.fill();ctx.beginPath();ctx.arc(cx-15,50+i*20,18,0,Math.PI*2);ctx.fill()}
+
+  // Title
+  ctx.fillStyle='#ff6b8a';ctx.font='bold 24px "PingFang SC","Microsoft YaHei",sans-serif';ctx.textAlign='center';
+  ctx.fillText('🌟 萌宠大冒险 🌟',W/2,40);
+  ctx.fillStyle='#999';ctx.font='10px "PingFang SC","Microsoft YaHei",sans-serif';
+  ctx.fillText('和你的萌宠一起冒险吧！',W/2,58);
+
+  // Resource bar
+  const barY=65,barH=32;
+  ctx.fillStyle='rgba(255,255,255,0.85)';roundRect(10,barY,W-20,barH,14);ctx.fill();ctx.strokeStyle='rgba(255,180,180,0.5)';ctx.lineWidth=1;ctx.stroke();
+  ctx.fillStyle='#ff9500';ctx.font='bold 12px "PingFang SC","Microsoft YaHei",sans-serif';ctx.textAlign='left';
+  ctx.fillText('🪙 '+fmtNum(state.gold),22,barY+barH/2+1);
+  ctx.fillStyle='#5ac8fa';ctx.fillText('💎 '+state.diamond,105,barY+barH/2+1);
+  ctx.fillStyle='#4cd964';
+  ctx.fillText('⚡ '+state.stamina+'/'+state.maxStamina,185,barY+barH/2+1);
+  ctx.fillStyle='#ff6b8a';ctx.fillText('🐾 '+state.ownedPets.length,275,barY+barH/2+1);
+  ctx.fillStyle='#c77dff';ctx.fillText('🔮 '+state.evolutionStones,340,barY+barH/2+1);
+
+  // Stamina recovery bar
+  const staminaPct=state.stamina/state.maxStamina;
+  ctx.fillStyle='#eee';roundRect(10,barY+barH+4,W-20,5,2.5);ctx.fill();
+  ctx.fillStyle='#4cd964';roundRect(10,barY+barH+4,(W-20)*staminaPct,5,2.5);ctx.fill();
+
+  // Stage info bar
+  const highestStage=getHighestUnlockedStage();
+  const stageInfoY=barY+barH+18;
+  ctx.fillStyle='rgba(255,255,255,0.8)';roundRect(10,stageInfoY,W-20,28,10);ctx.fill();
+  let nextStageName='全部通关!';
+  if(highestStage&&!state.unlockedStages[highestStage.id])nextStageName=highestStage.name;
+  else if(Object.keys(state.unlockedStages).length>=STAGE_CONFIGS.length)nextStageName='全部通关!';
+  else nextStageName=STAGE_CONFIGS[Object.keys(state.unlockedStages).length]?.name||'全部通关!';
+  ctx.fillStyle='#ff6b8a';ctx.font='bold 11px "PingFang SC","Microsoft YaHei",sans-serif';ctx.textAlign='center';
+  ctx.fillText('🗺️ 当前可挑战: '+nextStageName+' | 平均等级: Lv.'+getTeamAvgLevel(),W/2,stageInfoY+16);
+
+  // Quick battle button
+  const quickBtnY=stageInfoY+34;
+  drawButton(W/2-55,quickBtnY,110,30,'⚡ 快速挑战','#ff5252','#fff',12);
+  hubButtons.push({x:W/2-55,y:quickBtnY,w:110,h:30,action:'quick_battle'});
+
+  // Main buttons - 3x2 grid
+  const btnW=145,btnH=55,startX=(W-btnW*2-10)/2,startY=quickBtnY+38,gap=10;
+  const btns=[
+    {text:'📖 萌宠图鉴',color:'#ff9a56',action:'pokedex'},
+    {text:'🎴 抽卡召唤',color:'#c77dff',action:'gacha'},
+    {text:'🗺️ 冒险关卡',color:'#ff5252',action:'adventure_map'},
+    {text:'🔄 合成进化',color:'#56ccf2',action:'synthesis'},
+    {text:'📋 日常任务',color:'#4cd964',action:'open_quests'},
+    {text:'⚔️ 自由战斗',color:'#ff9500',action:'battle'}
+  ];
+  hubButtons=hubButtons.filter(b=>b.action!=='quick_battle');
+  btns.forEach((b,i)=>{
+    const col=i%2,row=Math.floor(i/2),bx=startX+col*(btnW+gap),by=startY+row*(btnH+gap);
+    hubButtons.push({x:bx,y:by,w:btnW,h:btnH,action:b.action});
+    ctx.save();
+    ctx.shadowColor='rgba(0,0,0,0.1)';ctx.shadowBlur=6;ctx.shadowOffsetY=2;
+    roundRect(bx,by,btnW,btnH,14);
+    const bg=ctx.createLinearGradient(bx,by,bx,by+btnH);bg.addColorStop(0,b.color);bg.addColorStop(1,adjustColor(b.color,-20));
+    ctx.fillStyle=bg;ctx.fill();
+    ctx.shadowColor='transparent';
+    ctx.fillStyle='#fff';ctx.font='bold 16px "PingFang SC","Microsoft YaHei",sans-serif';ctx.textAlign='center';
+    ctx.fillText(b.text,bx+btnW/2,by+btnH/2+1);
+    ctx.restore();
+  });
+
+  // Quick quest view
+  const questY=startY+3*(btnH+gap)+8;
+  ctx.fillStyle='#666';ctx.font='bold 12px "PingFang SC","Microsoft YaHei",sans-serif';ctx.textAlign='left';
+  ctx.fillText('📋 任务进度',15,questY);
+  const pendingQuests=QUEST_CONFIGS.filter(q=>(q.type==='daily'||!state.quests[q.id]?.claimed)).slice(0,3);
+  ctx.fillStyle='#999';ctx.font='10px "PingFang SC","Microsoft YaHei",sans-serif';
+  pendingQuests.forEach((q,i)=>{
+    const qty=questY+6+i*16;
+    const prog=state.quests[q.id]?.progress||0;
+    const done=prog>=q.target&&!state.quests[q.id]?.claimed;
+    ctx.fillText(`${done?'✅':'○'} ${q.desc} (${prog}/${q.target})`,15,qty+6);
+  });
+
+  // Team display
+  const teamY=questY+60;
+  ctx.fillStyle='#666';ctx.font='bold 12px "PingFang SC","Microsoft YaHei",sans-serif';ctx.textAlign='left';
+  ctx.fillText('📋 冒险队伍 ('+state.team.filter(uid=>state.ownedPets.some(p=>p.uid===uid)).length+'/6)',15,teamY);
+
+  const cardW=68,cardH=80,cardsPerRow=6;
+  const cardGap=(W-30-cardsPerRow*cardW)/(cardsPerRow-1);
+  state.team.forEach((uid,i)=>{
+    if(i>=MAX_TEAM_SIZE)return;
+    const pet=getOwnedPetByUid(uid);if(!pet)return;
+    const cfg=getPetConfig(pet.id);
+    const cx=15+i*(cardW+cardGap),cy=teamY+10;
+    ctx.fillStyle='rgba(255,255,255,0.85)';roundRect(cx,cy,cardW,cardH,8);ctx.fill();
+    ctx.strokeStyle=RARITY_COLORS[cfg.rarity];ctx.lineWidth=1.2;ctx.beginPath();roundRect(cx,cy,cardW,cardH,8);ctx.stroke();
+    drawPetOnCanvas(ctx,cx+cardW/2,cy+25,20,pet.id,cfg.element,cfg.rarity,frame);
+    ctx.fillStyle='#333';ctx.font='bold 10px "PingFang SC","Microsoft YaHei",sans-serif';ctx.textAlign='center';
+    ctx.fillText(cfg.name,cx+cardW/2,cy+45);
+    ctx.fillStyle='#ff6b8a';ctx.font='9px "PingFang SC","Microsoft YaHei",sans-serif';
+    ctx.fillText('Lv.'+pet.level,cx+cardW/2,cy+58);
+    ctx.fillStyle='#ffd700';ctx.font='8px "PingFang SC","Microsoft YaHei",sans-serif';
+    ctx.fillText('★'.repeat(cfg.star),cx+cardW/2,cy+72);
+  });
+
+  // Stamina recovery
+  if(frame%180===0&&state.stamina<state.maxStamina){state.stamina=Math.min(state.maxStamina,state.stamina+1)}
+
+  // Bounce numbers
+  state.bounceNumbers=state.bounceNumbers.filter(bn=>{bn.life++;bn.y-=1;bn.alpha=Math.max(0,1-bn.life/40);return bn.alpha>0});
+  state.bounceNumbers.forEach(bn=>{
+    const colors={gold:'#ff9500',diamond:'#5ac8fa',stamina:'#4cd964'};
+    ctx.fillStyle=`rgba(${bn.type==='gold'?'255,149,0':bn.type==='diamond'?'90,200,250':'76,217,100'},${bn.alpha})`;
+    ctx.font='bold 16px "PingFang SC","Microsoft YaHei",sans-serif';ctx.textAlign='center';
+    const prefix=bn.type==='gold'?'🪙':bn.type==='diamond'?'💎':'⚡';
+    ctx.fillText(prefix+'+'+bn.amount,bn.x+Math.sin(bn.life*0.15)*5,bn.y);
+  });
+}
+
+function fmtNum(n){return n>=1000000?(n/1000000).toFixed(1)+'M':n>=1000?(n/1000).toFixed(1)+'K':String(n)}
+
+// ==================== SCREEN: ADVENTURE MAP ====================
+let advMapButtons=[];
+function renderAdventureMap(frame){
+  ctx.fillStyle='#1a1a2e';ctx.fillRect(0,0,W,H);
+  // Starfield background
+  ctx.fillStyle='rgba(255,255,255,0.03)';
+  for(let i=0;i<60;i++){const sx=((i*137+frame*0.3)%W),sy=((i*89+frame*0.2)%H);ctx.beginPath();ctx.arc(sx,sy,1.5,0,Math.PI*2);ctx.fill()}
+
+  drawButton(15,10,70,32,'← 返回','#555','#fff',13);
+  advMapButtons=[{x:15,y:10,w:70,h:32,action:'back'}];
+
+  ctx.fillStyle='#ffd700';ctx.font='bold 24px "PingFang SC","Microsoft YaHei",sans-serif';ctx.textAlign='center';
+  ctx.fillText('🗺️ 冒险地图',W/2,55);
+  ctx.fillStyle='#aaa';ctx.font='11px "PingFang SC","Microsoft YaHei",sans-serif';
+  ctx.fillText('队伍平均等级: Lv.'+getTeamAvgLevel()+' | 进化石: 🔮'+state.evolutionStones,W/2,72);
+
+  // Draw map path and nodes
+  const nodePositions=calculateNodePositions();
+  // Draw chain/path between nodes
+  for(let i=0;i<nodePositions.length-1;i++){
+    const from=nodePositions[i],to=nodePositions[i+1];
+    drawChainPath(from,to,i,frame);
+  }
+
+  // Draw nodes
+  nodePositions.forEach((pos,i)=>{
+    const stage=STAGE_CONFIGS[i];
+    const isCleared=state.unlockedStages[stage.id];
+    const isFirstUnlocked=i===0?true:state.unlockedStages[STAGE_CONFIGS[i-1].id];
+    const canChallenge=isFirstUnlocked&&!isCleared&&getTeamAvgLevel()>=stage.unlockLevel;
+    const isLocked=!isFirstUnlocked||(!isCleared&&getTeamAvgLevel()<stage.unlockLevel);
+    const stars=state.stageStars[stage.id]||0;
+
+    drawMapNode(pos.x,pos.y,40,stage,isCleared,canChallenge,isLocked,stars,frame,i+1);
+    advMapButtons.push({x:pos.x-42,y:pos.y-42,w:84,h:84,action:'select_stage_'+stage.id});
+  });
+
+  // Legend
+  const legY=H-55;
+  ctx.fillStyle='rgba(255,255,255,0.1)';roundRect(20,legY,W-40,40,10);ctx.fill();
+  ctx.fillStyle='#fff';ctx.font='10px "PingFang SC","Microsoft YaHei",sans-serif';ctx.textAlign='center';
+  ctx.fillText('🔒 未解锁  ⭐ 可挑战  ✅ 已通关  👑 最佳3星',W/2,legY+25);
+}
+
+function calculateNodePositions(){
+  const positions=[];
+  const marginX=60,marginY=120,mapW=W-marginX*2,mapH=H-marginY-150;
+  for(let i=0;i<STAGE_CONFIGS.length;i++){
+    const t=i/(STAGE_CONFIGS.length-1);
+    const x=marginX+t*mapW+(Math.sin(i*1.8)*35);
+    const y=marginY+(i%2)*mapH*0.45+(Math.floor(i/2)%2)*mapH*0.1;
+    positions.push({x,y});
+  }
+  return positions;
+}
+
+function drawChainPath(from,to,segIdx,frame){
+  const steps=20;
+  ctx.strokeStyle='rgba(255,255,255,0.15)';
+  ctx.lineWidth=3;ctx.lineCap='round';
+  ctx.setLineDash([6,4]);ctx.lineDashOffset=-frame*0.5;
+  ctx.beginPath();ctx.moveTo(from.x,from.y);
+  for(let i=1;i<=steps;i++){
+    const t=i/steps;
+    const cx=from.x+(to.x-from.x)*t,cy=from.y+(to.y-from.y)*t+Math.sin(t*Math.PI)*25;
+    ctx.lineTo(cx,cy);
+  }
+  ctx.stroke();ctx.setLineDash([]);
+
+  // Glow dots along path
+  for(let i=3;i<=steps-3;i+=3){
+    const t=i/steps;
+    const cx=from.x+(to.x-from.x)*t,cy=from.y+(to.y-from.y)*t+Math.sin(t*Math.PI)*25;
+    const isCleared=state.unlockedStages[STAGE_CONFIGS[segIdx]?.id];
+    ctx.fillStyle=isCleared?'rgba(76,217,100,0.6)':'rgba(255,255,255,0.2)';
+    ctx.beginPath();ctx.arc(cx,cy,2.5+Math.sin(frame*0.08+i)*0.8,0,Math.PI*2);ctx.fill();
+  }
+}
+
+function drawMapNode(x,y,radius,stage,isCleared,canChallenge,isLocked,stars,frame,num){
+  ctx.save();
+  // Island base
+  const pulse=canChallenge?(1+Math.sin(frame*0.06)*0.08):1;
+  const r=radius*pulse;
+
+  // Outer glow for current challenge
+  if(canChallenge){
+    ctx.shadowColor='rgba(255,215,0,0.6)';ctx.shadowBlur=15+Math.sin(frame*0.08)*8;
+  }
+
+  // Island circle
+  const islandGrad=ctx.createRadialGradient(x-3,y-3,r*0.1,x,y,r);
+  if(isCleared){
+    islandGrad.addColorStop(0,'#81c784');islandGrad.addColorStop(1,'#388e3c');
+  }else if(isLocked){
+    islandGrad.addColorStop(0,'#888');islandGrad.addColorStop(1,'#444');
+  }else{
+    islandGrad.addColorStop(0,stage.bgGradient[0]);islandGrad.addColorStop(1,stage.bgGradient[1]);
+  }
+  ctx.fillStyle=islandGrad;ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.fill();
+  ctx.strokeStyle=isCleared?'#4cd964':isLocked?'#666':canChallenge?'#ffd700':'rgba(255,255,255,0.3)';
+  ctx.lineWidth=2.5;ctx.stroke();
+  ctx.shadowColor='transparent';
+
+  // Node number
+  ctx.fillStyle='rgba(0,0,0,0.5)';
+  ctx.beginPath();ctx.arc(x,y-4,r*0.45,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle='#fff';ctx.font='bold 14px "PingFang SC","Microsoft YaHei",sans-serif';ctx.textAlign='center';
+  ctx.fillText(num,x,y);
+
+  // Stage name below
+  ctx.fillStyle=isLocked?'#555':isCleared?'#4cd964':'#fff';
+  ctx.font='bold 12px "PingFang SC","Microsoft YaHei",sans-serif';
+  ctx.fillText(stage.name,x,y+r+16);
+  ctx.fillStyle='#aaa';ctx.font='9px "PingFang SC","Microsoft YaHei",sans-serif';
+  ctx.fillText('推荐 Lv.'+stage.unlockLevel,x,y+r+30);
+
+  // Status icon
+  if(isCleared){
+    // Crown + green check
+    ctx.fillStyle='#ffd700';ctx.font='18px sans-serif';ctx.textAlign='center';
+    ctx.fillText('👑',x,y-r-6);
+    ctx.fillStyle='#4cd964';ctx.font='14px sans-serif';
+    ctx.fillText('✅',x,y-r+14);
+    // Stars
+    ctx.fillStyle='#ffd700';ctx.font='11px sans-serif';
+    ctx.fillText('★'.repeat(Math.max(1,stars)),x,y-r+30);
+  }else if(canChallenge){
+    // Pulsing star
+    ctx.fillStyle='#ffd700';ctx.font=(18+Math.sin(frame*0.1)*3)+'px sans-serif';ctx.textAlign='center';
+    ctx.fillText('⭐',x,y-r-4);
+  }else if(isLocked){
+    // Lock
+    ctx.fillStyle='#999';ctx.font='22px sans-serif';ctx.textAlign='center';
+    ctx.fillText('🔒',x,y-r-2);
+  }
+
+  ctx.restore();
+}
+
+// ==================== SCREEN: QUESTS ====================
+let questButtons=[];
+function renderQuests(frame){
+  ctx.fillStyle='#f0fff4';ctx.fillRect(0,0,W,H);
+  drawButton(15,10,70,32,'← 返回','#999','#fff',13);
+  questButtons=[{x:15,y:10,w:70,h:32,action:'back'}];
+
+  ctx.fillStyle='#4cd964';ctx.font='bold 22px "PingFang SC","Microsoft YaHei",sans-serif';ctx.textAlign='center';
+  ctx.fillText('📋 日常任务',W/2,50);
+  ctx.fillStyle='#999';ctx.font='10px "PingFang SC","Microsoft YaHei",sans-serif';
+  const today=new Date().toDateString();
+  ctx.fillText('每日任务次日0点重置 | '+today,W/2,68);
+
+  const dailyQuests=QUEST_CONFIGS.filter(q=>q.type==='daily');
+  const permanentQuests=QUEST_CONFIGS.filter(q=>q.type==='permanent');
+
+  let qy=85;
+  // Section header: Daily
+  ctx.fillStyle='#ff9500';ctx.font='bold 14px "PingFang SC","Microsoft YaHei",sans-serif';ctx.textAlign='left';
+  ctx.fillText('📅 每日任务',20,qy+10);qy+=28;
+
+  dailyQuests.forEach((q,idx)=>{
+    const qh=52,prog=state.quests[q.id]?.progress||0;
+    const done=prog>=q.target;
+    const claimed=state.quests[q.id]?.claimed||false;
+    ctx.fillStyle=claimed?'rgba(200,255,200,0.5)':done?'rgba(255,255,200,0.6)':'rgba(255,255,255,0.9)';
+    roundRect(15,qy,W-30,qh,10);ctx.fill();
+    ctx.strokeStyle=claimed?'#4cd964':done?'#ffd700':'#ddd';ctx.lineWidth=1;ctx.stroke();
+
+    ctx.fillStyle='#333';ctx.font='bold 13px "PingFang SC","Microsoft YaHei",sans-serif';ctx.textAlign='left';
+    ctx.fillText(q.name+' - '+q.desc,25,qy+18);
+    const rwStr=Object.entries(q.reward).map(([k,v])=>(k==='gold'?'🪙':k==='diamond'?'💎':k==='stamina'?'⚡':'')+v).join(' ');
+    ctx.fillStyle='#ff9500';ctx.font='11px "PingFang SC","Microsoft YaHei",sans-serif';
+    ctx.fillText('奖励: '+rwStr,25,qy+36);
+
+    if(claimed){ctx.fillStyle='#4cd964';ctx.font='bold 13px "PingFang SC","Microsoft YaHei",sans-serif';ctx.textAlign='right';ctx.fillText('✅ 已领取',W-25,qy+qh/2+3)}
+    else if(done){
+      drawSmallButton(W-95,qy+8,80,qh-16,'领取奖励','#ffd700','#fff',11);
+      questButtons.push({x:W-95,y:qy+8,w:80,h:qh-16,action:'claim_quest_'+q.id});
+    }else{
+      ctx.fillStyle='#aaa';ctx.font='12px "PingFang SC","Microsoft YaHei",sans-serif';ctx.textAlign='right';
+      ctx.fillText(prog+'/'+q.target,W-25,qy+qh/2+3);
+      // Progress bar
+      ctx.fillStyle='#eee';roundRect(W-110,qy+qh-8,95,5,2.5);ctx.fill();
+      ctx.fillStyle='#4cd964';roundRect(W-110,qy+qh-8,95*(prog/q.target),5,2.5);ctx.fill();
+    }
+    qy+=qh+8;
+  });
+
+  // Permanent
+  qy+=10;
+  ctx.fillStyle='#c77dff';ctx.font='bold 14px "PingFang SC","Microsoft YaHei",sans-serif';ctx.textAlign='left';
+  ctx.fillText('🏆 成就任务',20,qy+10);qy+=28;
+
+  permanentQuests.forEach((q,idx)=>{
+    const qh=46,prog=Math.min(state.ownedPets.length,q.target);
+    const done=prog>=q.target;
+    const claimed=state.quests[q.id]?.claimed||false;
+    ctx.fillStyle=claimed?'rgba(200,255,200,0.4)':done?'rgba(255,255,200,0.5)':'rgba(255,255,255,0.9)';
+    roundRect(15,qy,W-30,qh,10);ctx.fill();
+    ctx.strokeStyle=claimed?'#4cd964':done?'#ffd700':'#ddd';ctx.lineWidth=1;ctx.stroke();
+
+    ctx.fillStyle='#333';ctx.font='bold 12px "PingFang SC","Microsoft YaHei",sans-serif';ctx.textAlign='left';
+    ctx.fillText(q.desc,25,qy+16);
+    const rwStr=Object.entries(q.reward).map(([k,v])=>(k==='gold'?'🪙':k==='diamond'?'💎':k==='stamina'?'⚡':'')+v).join(' ');
+    ctx.fillStyle='#ff9500';ctx.font='10px "PingFang SC","Microsoft YaHei",sans-serif';
+    ctx.fillText('奖励: '+rwStr,25,qy+32);
+
+    if(claimed){ctx.fillStyle='#4cd964';ctx.font='bold 12px "PingFang SC","Microsoft YaHei",sans-serif';ctx.textAlign='right';ctx.fillText('✅ 已领取',W-25,qy+qh/2+3)}
+    else if(done){
+      drawSmallButton(W-95,qy+6,80,qh-12,'领取奖励','#ffd700','#fff',11);
+      questButtons.push({x:W-95,y:qy+6,w:80,h:qh-12,action:'claim_quest_'+q.id});
+    }else{
+      ctx.fillStyle='#aaa';ctx.font='11px "PingFang SC","Microsoft YaHei",sans-serif';ctx.textAlign='right';
+      ctx.fillText(prog+'/'+q.target,W-25,qy+qh/2+3);
+    }
+    qy+=qh+8;
+  });
+}
+
+// ==================== SCREEN: POKEDEX ====================
+let pokedexScroll=0,pokedexButtons=[],pokedexTotalH=0;
+function renderPokedex(frame){
+  ctx.fillStyle='#f8f0ff';ctx.fillRect(0,0,W,H);
+  ctx.fillStyle='#7c4dff';ctx.font='bold 22px "PingFang SC","Microsoft YaHei",sans-serif';ctx.textAlign='center';ctx.fillText('📖 萌宠图鉴',W/2,40);
+  drawButton(15,10,70,32,'← 返回','#999','#fff',13);
+  pokedexButtons=[{x:15,y:10,w:70,h:32,action:'back'}];
+
+  const tabs=[{r:'UR',n:'神话',c:'#FF4500'},{r:'SSR',n:'传说',c:'#FFD700'},{r:'SR',n:'史诗',c:'#C0C0C0'},{r:'R',n:'稀有',c:'#CD7F32'},{r:'N',n:'普通',c:'#808080'}];
+  const activeFilter=state.subScreen==='pokedex_filter'?state.selectedPetUid:'ALL';
+  const tabW=66,tabGap=3,tabStartX=(W-(tabs.length+1)*tabW-tabs.length*tabGap)/2;
+  const allTx=tabStartX,allTy=55;
+  ctx.fillStyle=activeFilter==='ALL'?'#7c4dff':'rgba(255,255,255,0.7)';roundRect(allTx,allTy,tabW,26,12);ctx.fill();
+  ctx.fillStyle=activeFilter==='ALL'?'#fff':'#666';ctx.font='bold 11px sans-serif';ctx.textAlign='center';ctx.fillText('全部',allTx+tabW/2,allTy+15);
+  pokedexButtons.push({x:allTx,y:allTy,w:tabW,h:26,action:'filter_ALL'});
+  tabs.forEach((t,i)=>{
+    const tx=tabStartX+(i+1)*(tabW+tabGap),ty=55;
+    ctx.fillStyle=activeFilter===t.r?adjustColor(t.c,-10):'rgba(255,255,255,0.7)';roundRect(tx,ty,tabW,26,12);ctx.fill();
+    ctx.fillStyle=activeFilter===t.r?'#fff':'#666';ctx.font='bold 10px sans-serif';ctx.textAlign='center';ctx.fillText(t.n+' '+t.r,tx+tabW/2,ty+15);
+    pokedexButtons.push({x:tx,y:ty,w:tabW,h:26,action:'filter_'+t.r});
+  });
+
+  let displayList=[],filterRarities=activeFilter==='ALL'?RARITY_ORDER:[activeFilter],currentY=92;
+  filterRarities.forEach(rarity=>{
+    const pets=state.ownedPets.filter(p=>{const c=getPetConfig(p.id);return c&&c.rarity===rarity}).sort((a,b)=>(getPetConfig(b.id)?.star||0)-(getPetConfig(a.id)?.star||0));
+    if(pets.length===0)return;
+    displayList.push({type:'h',rarity,y:currentY});currentY+=20;
+    for(let i=0;i<pets.length;i+=2){displayList.push({type:'r',pets:pets.slice(i,i+2),y:currentY});currentY+=85}
+  });
+  pokedexTotalH=currentY+80;
+
+  ctx.save();ctx.beginPath();ctx.rect(10,88,W-20,H-100);ctx.clip();
+  displayList.forEach(item=>{
+    const dy=item.y+pokedexScroll;if(dy<-50||dy>H)return;
+    if(item.type==='h'){
+      ctx.fillStyle=RARITY_COLORS[item.rarity];ctx.font='bold 13px sans-serif';ctx.textAlign='left';ctx.fillText(RARITY_NAMES[item.rarity]+' 级',20,dy+14);
+    }else{
+      item.pets.forEach((pet,j)=>{
+        const cfg=getPetConfig(pet.id),cx=20+j*218,cy=dy;
+        ctx.fillStyle='rgba(255,255,255,0.9)';roundRect(cx,cy,205,78,12);ctx.fill();
+        ctx.strokeStyle=RARITY_COLORS[cfg.rarity];ctx.lineWidth=1.5;ctx.stroke();
+        drawPetOnCanvas(ctx,cx+42,cy+40,26,pet.id,cfg.element,cfg.rarity,frame);
+        ctx.fillStyle='#333';ctx.font='bold 13px sans-serif';ctx.textAlign='left';ctx.fillText(cfg.name,cx+75,cy+17);
+        const stats=getPetStats(pet);
+        ctx.fillStyle='#666';ctx.font='10px sans-serif';
+        ctx.fillText('Lv.'+pet.level+' | '+ELEMENT_ICONS[cfg.element]+' '+ELEMENT_NAMES[cfg.element],cx+75,cy+32);
+        ctx.fillText('⚔️'+stats.attack+' 🛡️'+stats.defense+' ❤️'+stats.maxHp,cx+75,cy+46);
+        const inTeam=state.team.includes(pet.uid);
+        ctx.fillStyle=inTeam?'#4cd964':'#ccc';ctx.font='9px sans-serif';ctx.fillText(inTeam?'✓ 队伍中':'○ 待命',cx+75,cy+60);
+        pokedexButtons.push({x:cx,y:cy,w:205,h:78,action:'detail_'+pet.uid});
+      });
+    }
+  });
+  ctx.restore();
+}
+
+// ==================== SCREEN: POKEDEX DETAIL (WITH EVOLUTION) ====================
+function renderPokedexDetail(frame){
+  const petUid=state.selectedPetUid,pet=getOwnedPetByUid(petUid);
+  if(!pet){state.screen='pokedex';state.subScreen=null;return}
+  const cfg=getPetConfig(pet.id),stats=getPetStats(pet);
+  ctx.fillStyle='#f8f0ff';ctx.fillRect(0,0,W,H);
+  drawButton(15,10,70,32,'← 返回','#999','#fff',13);
+  pokedexButtons=[{x:15,y:10,w:70,h:32,action:'back'}];
+
+  const centerX=W/2,centerY=150;
+  const glowGrad=ctx.createRadialGradient(centerX,centerY,10,centerX,centerY,100);
+  const rarityGlowCol={UR:'rgba(255,69,0,0.2)',SSR:'rgba(255,215,0,0.18)',SR:'rgba(192,192,192,0.12)',R:'rgba(205,127,50,0.08)',N:'rgba(128,128,128,0.05)'};
+  glowGrad.addColorStop(0,rarityGlowCol[cfg.rarity]);glowGrad.addColorStop(1,'transparent');
+  ctx.fillStyle=glowGrad;ctx.fillRect(centerX-100,centerY-100,200,200);
+  drawPetOnCanvas(ctx,centerX,centerY,50,pet.id,cfg.element,cfg.rarity,frame);
+
+  ctx.fillStyle=RARITY_COLORS[cfg.rarity];ctx.font='bold 22px sans-serif';ctx.textAlign='center';
+  ctx.fillText(cfg.name+'  ★'+cfg.star,centerX,215);
+  ctx.fillStyle='#999';ctx.font='11px sans-serif';ctx.fillText(RARITY_NAMES[cfg.rarity]+' · '+ELEMENT_NAMES[cfg.element],centerX,232);
+
+  // Stats card
+  const sx=30,sy=248;
+  ctx.fillStyle='rgba(255,255,255,0.9)';roundRect(sx,sy,W-60,145,14);ctx.fill();ctx.strokeStyle='rgba(200,200,200,0.5)';ctx.lineWidth=1;ctx.stroke();
+  ctx.fillStyle='#333';ctx.font='bold 13px sans-serif';ctx.textAlign='left';
+  ctx.fillText('📊 属性面板',sx+15,sy+20);
+  ctx.fillText('等级: Lv.'+pet.level+'  ('+pet.exp+'/'+(pet.level*EXP_PER_LEVEL)+' EXP)',sx+15,sy+40);
+  const statLabels=['⚔️ 攻击力','🛡️ 防御力','❤️ 生命值'],statVals=[stats.attack,stats.defense,stats.maxHp];
+  const barColors=['#ff6b8a','#5ac8fa','#4cd964'];
+  statLabels.forEach((label,i)=>{
+    const ly=sy+55+i*25;
+    ctx.fillStyle='#666';ctx.font='11px sans-serif';ctx.fillText(label,sx+15,ly+6);
+    ctx.fillStyle='#eee';roundRect(sx+90,ly,W-130,12,6);ctx.fill();
+    const fillPct=pet.level<20?pet.level/20:1;
+    ctx.fillStyle=barColors[i];roundRect(sx+90,ly,fillPct*(W-130),12,6);ctx.fill();
+    ctx.fillStyle='#333';ctx.font='bold 10px sans-serif';ctx.textAlign='right';ctx.fillText(String(statVals[i]),W-18,ly+6);
+    ctx.textAlign='left';
+  });
+
+  // Skill section
+  const skillY=sy+150;
+  ctx.fillStyle='rgba(255,255,255,0.9)';roundRect(sx,skillY,W-60,70,14);ctx.fill();ctx.strokeStyle='rgba(200,200,200,0.5)';ctx.stroke();
+  ctx.fillStyle='#7c4dff';ctx.font='bold 12px sans-serif';ctx.textAlign='left';ctx.fillText('✨ 技能: '+cfg.skill,sx+15,skillY+18);
+  ctx.fillStyle='#666';ctx.font='10px sans-serif';wrapText(ctx,cfg.skillDesc,sx+15,skillY+36,W-90,14);
+
+  // Description
+  const descY=skillY+78;
+  ctx.fillStyle='#999';ctx.font='10px sans-serif';ctx.textAlign='left';ctx.fillText('📝 '+cfg.description,sx+15,descY+12);
+
+  // Team toggle button
+  const inTeam=state.team.includes(pet.uid);
+  drawButton(sx,descY+24,W-60,34,inTeam?'− 移出队伍':'+ 加入队伍',inTeam?'#aaa':'#4cd964','#fff',13);
+  pokedexButtons.push({x:sx,y:descY+24,w:W-60,h:34,action:'toggle_team_'+pet.uid});
+
+  // Evolution section
+  const evoY=descY+66;
+  if(cfg.evolution){
+    const evoCfg=getPetConfig(cfg.evolution);
+    const canEvo=canEvolvePet(pet);
+    const stoneCost=getEvolutionStoneCost(cfg.rarity);
+    ctx.fillStyle='rgba(255,255,255,0.9)';roundRect(sx,evoY,W-60,75,14);ctx.fill();ctx.strokeStyle='rgba(200,200,200,0.5)';ctx.lineWidth=1;ctx.stroke();
+    ctx.fillStyle='#c77dff';ctx.font='bold 12px sans-serif';ctx.textAlign='left';
+    ctx.fillText('⚡ 进化 → '+evoCfg.name+' ('+RARITY_NAMES[evoCfg.rarity]+')',sx+15,evoY+18);
+    ctx.fillStyle='#666';ctx.font='10px sans-serif';
+    ctx.fillText('需要: Lv.'+cfg.evolutionLevel+' | 🔮进化石x'+stoneCost,sx+15,evoY+36);
+    ctx.fillText('当前: Lv.'+pet.level+' | 🔮'+state.evolutionStones+'个进化石',sx+15,evoY+50);
+
+    if(canEvo){
+      drawButton(W-130,evoY+18,100,35,'✨ 进化!','#c77dff','#fff',14);
+      pokedexButtons.push({x:W-130,y:evoY+18,w:100,h:35,action:'evolve_'+pet.uid});
+    }else{
+      ctx.fillStyle='#aaa';ctx.font='bold 12px sans-serif';ctx.textAlign='right';
+      const reason=pet.level<cfg.evolutionLevel?'等级不足':state.evolutionStones<stoneCost?'进化石不足':'无法进化';
+      ctx.fillText('🔒 '+reason,W-25,evoY+55);
+    }
+  }
+}
+
+function wrapText(ctx,text,x,y,maxWidth,lineHeight){
+  const chars=text.split('');let line='',ly=y;
+  for(let c of chars){const test=line+c;if(ctx.measureText(test).width>maxWidth&&line.length>0){ctx.fillText(line,x,ly);line=c;ly+=lineHeight}else{line=test}}
+  ctx.fillText(line,x,ly);
+}
+
+// ==================== SCREEN: GACHA ====================
+let gachaResults=[],gachaAnimPhase=0,gachaAnimTimer=0,gachaRevealIndex=0,gachaButtons=[];
+function doGacha(count){
+  if(state.gold<(count===1?100:900)){addMessage('金币不足！需要'+(count===1?100:900)+'金币','#ff4444','error');playSound('error');return}
+  state.gold-=(count===1?100:900);
+  gachaResults=[];
+  for(let i=0;i<count;i++){
+    const r=Math.random();let rarity='N';
+    if(r<0.01)rarity='UR';else if(r<0.05)rarity='SSR';else if(r<0.17)rarity='SR';else if(r<0.45)rarity='R';
+    const candidates=PETS_CONFIG.pets.filter(p=>p.rarity===rarity);
+    gachaResults.push(candidates[Math.floor(Math.random()*candidates.length)]);
+  }
+  state.totalPulls+=count;
+  updateQuestProgress('q_gacha',count);
+  gachaAnimPhase=1;gachaAnimTimer=0;gachaRevealIndex=0;
+  playSound('gacha_spin');
+}
+function processGachaPet(petCfg){
+  const existing=state.ownedPets.filter(p=>p.id===petCfg.id);
+  if(existing.length>0){
+    const expGain=petCfg.star*50;existing[0].exp+=expGain;
+    while(existing[0].exp>=existing[0].level*EXP_PER_LEVEL){existing[0].exp-=existing[0].level*EXP_PER_LEVEL;existing[0].level++}
+    addMessage('已有'+petCfg.name+'，转为'+expGain+'经验材料！','#ff9500');return false;
+  }
+  const newPet={id:petCfg.id,uid:uid(),level:1,exp:0,isInTeam:false};
+  state.ownedPets.push(newPet);
+  addMessage('获得 '+RARITY_NAMES[petCfg.rarity]+' 萌宠：'+petCfg.name+'！','#4cd964','celebration');
+  // Check collection quests
+  QUEST_CONFIGS.filter(q=>q.id.startsWith('q_collect_')).forEach(q=>{updateQuestProgress(q.id,0)});
+  return true;
+}
+function renderGacha(frame){
+  gachaButtons=[];ctx.fillStyle='#1a1a2e';ctx.fillRect(0,0,W,H);
+  ctx.fillStyle='rgba(255,255,255,0.03)';for(let i=0;i<30;i++){const sx=((i*137+frame*0.5)%W),sy=((i*89+frame*0.3)%H);ctx.beginPath();ctx.arc(sx,sy,2,0,Math.PI*2);ctx.fill()}
+  drawButton(15,10,70,32,'← 返回','#555','#fff',13);
+  gachaButtons=[{x:15,y:10,w:70,h:32,action:'back'}];
+  ctx.fillStyle='#ffd700';ctx.font='bold 22px sans-serif';ctx.textAlign='center';ctx.fillText('🎴 抽卡召唤',W/2,55);
+  ctx.fillStyle='#aaa';ctx.font='11px sans-serif';ctx.fillText('累计抽卡: '+state.totalPulls+' 次',W/2,72);
+  ctx.fillStyle='rgba(255,255,255,0.1)';roundRect(30,85,W-60,22,8);ctx.fill();
+  ctx.fillStyle='#888';ctx.font='10px sans-serif';ctx.textAlign='center';ctx.fillText('UR 1% | SSR 4% | SR 12% | R 28% | N 55%',W/2,98);
+
+  if(gachaAnimPhase===0){
+    drawGachaMachine(frame);
+    const btnY=400;
+    drawButton(W/2-140,btnY,130,50,'单抽 🪙100','#c77dff','#fff',17);
+    gachaButtons.push({x:W/2-140,y:btnY,w:130,h:50,action:'gacha_1'});
+    drawButton(W/2+10,btnY,130,50,'十连抽 🪙900','#ff6b00','#fff',17);
+    gachaButtons.push({x:W/2+10,y:btnY,w:130,h:50,action:'gacha_10'});
+    ctx.fillStyle='#ffd700';ctx.font='bold 14px sans-serif';ctx.textAlign='center';ctx.fillText('持有金币: 🪙'+state.gold,W/2,btnY+75);
+  }else if(gachaAnimPhase===1){
+    gachaAnimTimer++;drawGachaMachine(frame,true);
+    const spinTexts=['✨ 召唤中...','💫 魔力涌动...','🌟 即将揭晓...'];
+    ctx.fillStyle='#ffd700';ctx.font='bold 20px sans-serif';ctx.textAlign='center';
+    ctx.fillText(spinTexts[Math.floor(gachaAnimTimer/20)%3],W/2,300);
+    if(gachaAnimTimer>60){gachaAnimPhase=2;gachaAnimTimer=0}
+  }else if(gachaAnimPhase===2){
+    gachaAnimTimer++;
+    const hasHighRarity=gachaResults.some(p=>p.rarity==='SSR'||p.rarity==='UR');
+    if(hasHighRarity&&gachaAnimTimer<30){
+      const alpha=Math.sin(gachaAnimTimer*0.3)*0.5+0.5;ctx.fillStyle=`rgba(255,215,0,${alpha})`;ctx.fillRect(0,0,W,H);
+      ctx.fillStyle='#fff';ctx.font='bold 28px sans-serif';ctx.textAlign='center';
+      const rare=gachaResults.find(p=>p.rarity==='SSR'||p.rarity==='UR');
+      ctx.fillText('🌟 '+RARITY_NAMES[rare.rarity]+'!! 🌟',W/2,H/2);
+    }
+    if(gachaAnimTimer>40){gachaAnimPhase=3;gachaAnimTimer=0;gachaRevealIndex=0}
+  }else if(gachaAnimPhase===3){
+    if(gachaRevealIndex<gachaResults.length){
+      const pet=gachaResults[gachaRevealIndex];
+      if(gachaAnimTimer===0)processGachaPet(pet);
+      gachaAnimTimer++;
+      const centerX=W/2,centerY=200;
+      ctx.fillStyle='rgba(255,255,255,0.1)';roundRect(centerX-130,centerY-90,260,260,20);ctx.fill();
+      ctx.strokeStyle=RARITY_COLORS[pet.rarity];ctx.lineWidth=2;ctx.stroke();
+      drawPetOnCanvas(ctx,centerX,centerY-10,60,pet.id,pet.element,pet.rarity,frame);
+      ctx.fillStyle=RARITY_COLORS[pet.rarity];ctx.font='bold 20px sans-serif';ctx.textAlign='center';
+      ctx.fillText(pet.name+' ★'+pet.star,centerX,centerY+80);
+      ctx.fillStyle='#aaa';ctx.font='12px sans-serif';ctx.fillText(RARITY_NAMES[pet.rarity]+' · '+ELEMENT_NAMES[pet.element],centerX,centerY+100);
+      ctx.fillText((gachaRevealIndex+1)+'/'+gachaResults.length,W/2,centerY+140);
+      if(gachaAnimTimer>50){gachaRevealIndex++;gachaAnimTimer=0}
+    }else{
+      ctx.fillStyle='#4cd964';ctx.font='bold 20px sans-serif';ctx.textAlign='center';ctx.fillText('🎉 抽卡完成!',W/2,200);
+      drawButton(W/2-60,240,120,40,'确 定','#4cd964','#fff',16);
+      gachaButtons=[{x:W/2-60,y:240,w:120,h:40,action:'gacha_done'},{x:15,y:10,w:70,h:32,action:'back'}];
+      saveState();
+    }
+  }
+}
+
+function drawGachaMachine(frame,spinning=false){
+  const mx=W/2,my=240;
+  ctx.fillStyle='#333';roundRect(mx-70,my+50,140,25,8);ctx.fill();
+  const domeGrad=ctx.createRadialGradient(mx,my-10,20,mx,my-10,55);
+  domeGrad.addColorStop(0,'rgba(255,255,255,0.3)');domeGrad.addColorStop(1,'rgba(100,100,200,0.4)');
+  ctx.fillStyle=domeGrad;ctx.beginPath();ctx.arc(mx,my-10,50,Math.PI,0);ctx.fill();
+  ctx.strokeStyle='rgba(255,255,255,0.5)';ctx.lineWidth=2;ctx.stroke();
+  if(spinning){
+    const orbColors=['#ff4444','#4488ff','#44cc44','#ffdd44','#9944cc'];
+    for(let i=0;i<8;i++){const angle=(i/8*Math.PI*2+frame*0.15)%(Math.PI*2);const ox=mx+Math.cos(angle)*30,oy=my-10+Math.sin(angle)*20;ctx.fillStyle=orbColors[i%5];ctx.beginPath();ctx.arc(ox,oy,6,0,Math.PI*2);ctx.fill()}
+  }else{ctx.fillStyle='#ffd700';ctx.beginPath();ctx.arc(mx,my-15,15,0,Math.PI*2);ctx.fill();ctx.fillStyle='#fff';ctx.font='18px sans-serif';ctx.textAlign='center';ctx.fillText('?',mx,my-9)}
+}
+
+// ==================== SCREEN: SYNTHESIS ====================
+let synthesisButtons=[],synthScroll=0;
+function getSynthesizableGroups(){
+  const groups=[],counted={};
+  state.ownedPets.forEach(pet=>{const key=pet.id;if(!counted[key])counted[key]=[];counted[key].push(pet.uid)});
+  Object.entries(counted).forEach(([petId,uids])=>{
+    if(uids.length>=3){
+      const cfg=getPetConfig(petId),rarityIdx=RARITY_ORDER.indexOf(cfg.rarity);
+      if(rarityIdx<RARITY_ORDER.length-1){
+        const nextRarity=RARITY_ORDER[rarityIdx+1];
+        const evolveTargets=PETS_CONFIG.pets.filter(p=>p.rarity===nextRarity&&p.element===cfg.element);
+        if(evolveTargets.length>0)groups.push({sourceId:petId,sourceUids:uids.slice(0,3),targetOptions:evolveTargets,sourceCfg:cfg,nextRarity});
+      }
+    }
+  });
+  return groups;
+}
+function renderSynthesis(frame){
+  synthesisButtons=[];ctx.fillStyle='#f0ffe0';ctx.fillRect(0,0,W,H);
+  drawButton(15,10,70,32,'← 返回','#999','#fff',13);synthesisButtons=[{x:15,y:10,w:70,h:32,action:'back'}];
+  ctx.fillStyle='#56ccf2';ctx.font='bold 22px sans-serif';ctx.textAlign='center';ctx.fillText('🔄 合成进化',W/2,50);
+  ctx.fillStyle='#888';ctx.font='11px sans-serif';ctx.textAlign='center';ctx.fillText('3只相同萌宠 → 1只更高稀有度萌宠',W/2,70);
+  const groups=getSynthesizableGroups();
+  if(groups.length===0){ctx.fillStyle='#aaa';ctx.font='15px sans-serif';ctx.textAlign='center';ctx.fillText('😿 暂无可合成的萌宠组合',W/2,250);ctx.fillText('收集3只相同的萌宠来合成进化吧！',W/2,280);return}
+  let cy=95;ctx.save();ctx.beginPath();ctx.rect(15,90,W-30,H-150);ctx.clip();
+  groups.forEach((group,gi)=>{
+    const cardH=95;ctx.fillStyle='rgba(255,255,255,0.9)';roundRect(20,cy,W-40,cardH,12);ctx.fill();ctx.strokeStyle=RARITY_COLORS[group.sourceCfg.rarity];ctx.lineWidth=1.5;ctx.stroke();
+    for(let i=0;i<3;i++){const px=55+i*90;drawPetOnCanvas(ctx,px,cy+33,20,group.sourceId,group.sourceCfg.element,group.sourceCfg.rarity,frame)}
+    ctx.fillStyle='#56ccf2';ctx.font='20px sans-serif';ctx.textAlign='center';ctx.fillText('→',300,cy+33);
+    const target=group.targetOptions[0];drawPetOnCanvas(ctx,340,cy+33,26,target.id,target.element,target.rarity,frame);
+    ctx.fillStyle='#333';ctx.font='bold 12px sans-serif';ctx.textAlign='left';ctx.fillText(group.sourceCfg.name+' ×3',55,cy+78);
+    ctx.fillStyle='#56ccf2';ctx.font='11px sans-serif';ctx.fillText('→ '+RARITY_NAMES[group.nextRarity]+' '+target.name,155,cy+78);
+    drawSmallButton(375,cy+25,70,33,'合 成','#56ccf2','#fff',12);
+    synthesisButtons.push({x:375,y:cy+25,w:70,h:33,action:'synth_'+gi});
+    cy+=cardH+10;
+  });
+  ctx.restore();
+}
+
+function doSynthesis(groupIndex){
+  const groups=getSynthesizableGroups();if(groupIndex>=groups.length)return;
+  const group=groups[groupIndex],target=group.targetOptions[0];
+  if(!state.modal)state.modal={type:'synthesis_confirm',groupIndex,sourceName:group.sourceCfg.name,targetName:target.name,targetRarity:target.rarity};
+}
+function confirmSynthesis(){
+  if(!state.modal||state.modal.type!=='synthesis_confirm')return;
+  const groups=getSynthesizableGroups(),group=groups[state.modal.groupIndex],target=group.targetOptions[0];
+  group.sourceUids.forEach(uid=>{state.ownedPets=state.ownedPets.filter(p=>p.uid!==uid);state.team=state.team.filter(t=>t!==uid)});
+  const newPet={id:target.id,uid:uid(),level:1,exp:0,isInTeam:false};state.ownedPets.push(newPet);
+  updateQuestProgress('q_synthesis',1);
+  addMessage('合成成功！获得 '+RARITY_NAMES[target.rarity]+' '+target.name+'！','#ffd700','celebration');
+  playSound('synthesis');
+  state.modal=null;saveState();
+}
+
+// ==================== BATTLE SYSTEM (NORMAL + STAGE) ====================
+function initBattle(){
+  const teamPets=state.team.map(uid=>getOwnedPetByUid(uid)).filter(Boolean);
+  if(teamPets.length===0){addMessage('请先将萌宠加入冒险队伍！','#ff4444','error');playSound('error');return}
+  const enemyCount=3+Math.floor(Math.random()*4);
+  const enemyRarities=['N','N','N','R','R','SR','SSR'];const enemies=[];
+  for(let i=0;i<enemyCount;i++){
+    const r=enemyRarities[Math.floor(Math.random()*enemyRarities.length)];
+    const candidates=PETS_CONFIG.pets.filter(p=>p.rarity===r);
+    const ecfg=candidates[Math.floor(Math.random()*candidates.length)];
+    const level=1+Math.floor(Math.random()*5)*Math.max(1,Math.floor(state.ownedPets.length/10));
+    const levelMult=1+(level-1)*0.08;
+    enemies.push({id:ecfg.id,cfg:ecfg,level,maxHp:Math.floor(ecfg.baseHp*levelMult),hp:Math.floor(ecfg.baseHp*levelMult),attack:Math.floor(ecfg.baseAttack*levelMult),defense:Math.floor(ecfg.baseDefense*levelMult),skill:ecfg.skill,skillDesc:ecfg.skillDesc,element:ecfg.element,name:ecfg.name,alive:true});
+  }
+  const playerTeam=teamPets.map(pet=>{const stats=getPetStats(pet);return{uid:pet.uid,id:pet.id,cfg:getPetConfig(pet.id),level:pet.level,maxHp:stats.maxHp,hp:stats.maxHp,attack:stats.attack,defense:stats.defense,skill:stats.skill,skillDesc:stats.skillDesc,element:stats.element,name:stats.name,alive:true,expGain:0}});
+  state.battleState={mode:'normal',phase:'intro',playerTeam,enemies,turn:0,animTimer:0,acting:false,actionCount:0,damageNumbers:[],log:[],rewards:{gold:0,exp:0}};
+  state.battleState.log.push('⚔️ 战斗开始！敌人共'+enemies.length+'只');
+  state.screen='battle';playSound('click');
+}
+
+function initStageBattle(stageId){
+  const stageCfg=STAGE_CONFIGS.find(s=>s.id===stageId);
+  if(!stageCfg)return;
+  if(!state.unlockedStages[stageId]){
+    // Check if can unlock
+    const idx=STAGE_CONFIGS.indexOf(stageCfg);
+    if(idx>0&&!state.unlockedStages[STAGE_CONFIGS[idx-1].id]){addMessage('请先通关前一关卡！','#ff4444','error');playSound('error');return}
+    if(getTeamAvgLevel()<stageCfg.unlockLevel){addMessage('队伍平均等级不足Lv.'+stageCfg.unlockLevel+'！','#ff4444','error');playSound('error');return}
+  }
+  const teamPets=state.team.map(uid=>getOwnedPetByUid(uid)).filter(Boolean);
+  if(teamPets.length===0){addMessage('请先将萌宠加入冒险队伍！','#ff4444','error');playSound('error');return}
+
+  // Store pre-battle state for recovery on defeat
+  const preBattleHp=teamPets.map(p=>{const s=getPetStats(p);return{uid:p.uid,hp:s.maxHp}});
+
+  // Generate waves
+  const totalWaves=stageCfg.waves;
+  const allWaves=[];
+  for(let w=0;w<totalWaves;w++){
+    const enemyCount=2+Math.floor(Math.random()*3);
+    const waveEnemies=[];
+    const enemyLevel=stageCfg.unlockLevel+Math.floor(Math.random()*3);
+    for(let e=0;e<enemyCount;e++){
+      const rarityWeights=w===0?['N','N','R']:w<=2?['N','R','SR']:['R','R','SR','SSR'];
+      const r=rarityWeights[Math.floor(Math.random()*rarityWeights.length)];
+      const candidates=PETS_CONFIG.pets.filter(p=>p.rarity===r);
+      const ecfg=candidates[Math.floor(Math.random()*candidates.length)];
+      const levelMult=1+(enemyLevel-1)*0.09;
+      waveEnemies.push({id:ecfg.id,cfg:ecfg,level:enemyLevel,maxHp:Math.floor(ecfg.baseHp*levelMult),hp:Math.floor(ecfg.baseHp*levelMult),attack:Math.floor(ecfg.baseAttack*levelMult),defense:Math.floor(ecfg.baseDefense*levelMult),skill:ecfg.skill,skillDesc:ecfg.skillDesc,element:ecfg.element,name:ecfg.name,alive:true});
+    }
+    allWaves.push(waveEnemies);
+  }
+
+  // Boss wave
+  const bossCfg=PETS_CONFIG.pets.find(p=>p.id===stageCfg.boss.id);
+  const bossLevel=stageCfg.boss.level;
+  const bossLevelMult=1+(bossLevel-1)*0.1;
+  const bossEnemy={id:bossCfg.id,cfg:bossCfg,level:bossLevel,isBoss:true,name:stageCfg.boss.name,maxHp:Math.floor(bossCfg.baseHp*bossLevelMult*3),hp:Math.floor(bossCfg.baseHp*bossLevelMult*3),attack:Math.floor(bossCfg.baseAttack*bossLevelMult*1.5),defense:Math.floor(bossCfg.baseDefense*bossLevelMult),skill:bossCfg.skill,skillDesc:bossCfg.skillDesc,element:bossCfg.element,alive:true};
+  // Boss + some minions
+  const bossWave=[bossEnemy];
+  const minionCount=2;
+  for(let e=0;e<minionCount;e++){
+    const candidates=PETS_CONFIG.pets.filter(p=>p.rarity==='R'||p.rarity==='SR');
+    const ecfg=candidates[Math.floor(Math.random()*candidates.length)];
+    const levelMult=1+(bossLevel-2)*0.08;
+    bossWave.push({id:ecfg.id,cfg:ecfg,level:bossLevel-2,maxHp:Math.floor(ecfg.baseHp*levelMult),hp:Math.floor(ecfg.baseHp*levelMult),attack:Math.floor(ecfg.baseAttack*levelMult),defense:Math.floor(ecfg.baseDefense*levelMult),skill:ecfg.skill,skillDesc:ecfg.skillDesc,element:ecfg.element,name:ecfg.name,alive:true});
+  }
+  allWaves.push(bossWave);
+
+  const playerTeam=teamPets.map(pet=>{const stats=getPetStats(pet);return{uid:pet.uid,id:pet.id,cfg:getPetConfig(pet.id),level:pet.level,maxHp:stats.maxHp,hp:stats.maxHp,attack:stats.attack,defense:stats.defense,skill:stats.skill,skillDesc:stats.skillDesc,element:stats.element,name:stats.name,alive:true,expGain:0}});
+
+  state.battleState={mode:'stage',phase:'intro',stageCfg,waves:allWaves,currentWave:0,totalWaves:totalWaves+1,wavePhase:'intro',playerTeam,enemies:allWaves[0],turn:0,animTimer:0,acting:false,actionCount:0,damageNumbers:[],log:[],rewards:{gold:0,exp:0,stones:0},preBattleHp,bossWaveIdx:totalWaves};
+  state.battleState.log.push('🏰 '+stageCfg.name+' - 第1/'+(totalWaves+1)+'波');
+  state.screen='battle';playSound('click');
+}
+
+function calcDamage(attacker,defender,skillMult=1.0){
+  let atk=attacker.attack,def=defender.defense;
+  const elem=PETS_CONFIG.elements[attacker.element];
+  if(elem&&elem.strongAgainst===defender.element)atk=Math.floor(atk*1.5);
+  else if(elem&&elem.weakAgainst===defender.element)atk=Math.floor(atk*0.7);
+  if((attacker.element==='LIGHT'&&defender.element==='DARK')||(attacker.element==='DARK'&&defender.element==='LIGHT'))atk=Math.floor(atk*1.3);
+  let dmg=Math.max(1,Math.floor(atk*skillMult)-Math.floor(def*0.3));
+  dmg=Math.floor(dmg*(0.9+Math.random()*0.2));return Math.max(1,dmg);
+}
+function getAliveTeam(team){return team.filter(p=>p.alive)}
+function getAliveEnemies(){return state.battleState.enemies.filter(e=>e.alive)}
+function addBattleLog(msg){if(state.battleState)state.battleState.log.push(msg)}
+function addDamageNum(x,y,val,color='#ff4444'){if(state.battleState)state.battleState.damageNumbers.push({x,y,val,color,alpha:1,life:0})}
+
+// ==================== BATTLE UPDATE & RENDER ====================
+function updateBattle(){
+  if(!state.battleState)return;
+  const bs=state.battleState;
+  // Update damage numbers
+  bs.damageNumbers.forEach(dn=>{dn.life++;dn.y-=1.5;dn.alpha=Math.max(0,1-dn.life/45)});
+  bs.damageNumbers=bs.damageNumbers.filter(dn=>dn.alpha>0);
+
+  if(bs.phase==='intro'){
+    bs.animTimer++;
+    if(bs.mode==='stage'){
+      if(bs.animTimer>80){proceedToWave();bs.animTimer=0;}
+    }else{
+      if(bs.animTimer>60){bs.phase='player_turn';bs.animTimer=0;bs.turn=1;bs.log.push('--- 第1回合 ---')}
+    }
+  }else if(bs.phase==='player_turn'||bs.phase==='enemy_turn'){
+    const ACT_DELAY=18;bs.animTimer++;
+    if(!bs.acting){
+      const isPlayer=bs.phase==='player_turn';
+      const allies=isPlayer?getAliveTeam(bs.playerTeam):getAliveEnemies();
+      const foes=isPlayer?getAliveEnemies():getAliveTeam(bs.playerTeam);
+
+      if(allies.length===0||foes.length===0){
+        if(bs.mode==='stage'){
+          handleStageWaveEnd();
+        }else{
+          bs.phase=bs.phase==='player_turn'?'defeat':'victory';
+          bs.animTimer=0;
+          if(bs.phase==='victory'){
+            bs.rewards={gold:30+Math.floor(Math.random()*40),exp:50+Math.floor(Math.random()*60)};
+            updateQuestProgress('q_battle',1);
+            playSound('victory');
+          }
+        }
+        return;
+      }
+
+      if(bs.animTimer>=ACT_DELAY){
+        const actorIdx=Math.floor(bs.actionCount||0)%allies.length;
+        const attacker=allies[actorIdx];
+        const target=foes[Math.floor(Math.random()*foes.length)];
+        const useSkill=Math.random()<0.4;
+        const skillMult=useSkill?(1.2+Math.random()*0.8):1.0;
+        const dmg=calcDamage(attacker,target,skillMult);
+        target.hp=Math.max(0,target.hp-dmg);
+        const skillName=useSkill?attacker.skill:'普通攻击';
+        const prefix=isPlayer?'':'敌方 ';
+        const deadMsg=isPlayer?'💀 '+target.name+' 被击败了！':'💔 '+target.name+' 倒下了！';
+        if(target.hp<=0){target.alive=false;bs.log.push(deadMsg)}
+        bs.log.push(prefix+attacker.name+' ['+skillName+'] → '+target.name+' (-'+dmg+'HP)');
+        addDamageNum(isPlayer?300:180,isPlayer?320:400,dmg,isPlayer?'#ff4444':'#ffaa00');
+        playSound('attack');
+        bs.actionCount=(bs.actionCount||0)+1;bs.acting=false;bs.animTimer=0;
+
+        if(bs.actionCount>=allies.length){
+          bs.actionCount=0;bs.animTimer=0;
+          if(isPlayer){bs.phase='enemy_turn';bs.animTimer=0}
+          else{bs.phase='player_turn';bs.animTimer=0;bs.turn++;bs.log.push('--- 第'+bs.turn+'回合 ---')}
+        }
+      }
+    }
+  }else if(bs.phase==='wave_cleared'){
+    bs.animTimer++;
+    if(bs.animTimer>50){
+      proceedToWave();
+    }
+  }else if(bs.phase==='boss_warning'){
+    bs.animTimer++;
+    if(bs.animTimer>70){
+      bs.phase='player_turn';bs.animTimer=0;bs.turn=1;bs.log.push('--- BOSS战第1回合 ---');
+    }
+  }else if(bs.phase==='victory'||bs.phase==='defeat'){
+    bs.animTimer++
+  }
+}
+
+function handleStageWaveEnd(){
+  const bs=state.battleState;
+  if(!bs||bs.mode!=='stage')return;
+  const isPlayerWin=getAliveTeam(bs.playerTeam).length>0;
+
+  if(!isPlayerWin){
+    // Defeat
+    bs.phase='defeat';bs.animTimer=0;
+    bs.log.push('💔 关卡挑战失败...');
+    playSound('error');
+    return;
+  }
+
+  // Check if this was the boss wave
+  if(bs.currentWave>=bs.bossWaveIdx){
+    // Stage complete!
+    bs.phase='victory';bs.animTimer=0;
+    const stageCfg=bs.stageCfg;
+    const isFirst=!state.unlockedStages[stageCfg.id];
+    const aliveCount=getAliveTeam(bs.playerTeam).length;
+    const totalCount=bs.playerTeam.length;
+    const totalHpPct=bs.playerTeam.reduce((s,p)=>s+p.hp/p.maxHp,0)/totalCount;
+    let stars=1;
+    if(aliveCount===totalCount&&totalHpPct>0.7)stars=3;
+    else if(aliveCount>=totalCount*0.7&&totalHpPct>0.4)stars=2;
+
+    const mult=isFirst?1:(state.unlockedStages[stageCfg.id]?0.5:1);
+    const goldReward=Math.floor(stageCfg.rewards.gold*mult);
+    const expReward=Math.floor(stageCfg.rewards.exp*mult);
+    const stoneReward=Math.floor(stageCfg.rewards.stones*(isFirst?1:0.5));
+    const diamondBonus=isFirst?2:0;
+
+    bs.rewards={gold:goldReward,exp:expReward,stones:stoneReward,diamond:diamondBonus,stars,isFirst};
+    state.unlockedStages[stageCfg.id]=true;
+    const prevStars=state.stageStars[stageCfg.id]||0;
+    if(stars>prevStars)state.stageStars[stageCfg.id]=stars;
+    state.evolutionStones+=stoneReward;
+    state.gold+=goldReward;
+    if(diamondBonus)state.diamond+=diamondBonus;
+
+    // Give exp to surviving team
+    bs.playerTeam.filter(p=>p.alive).forEach(btPet=>{
+      const ownedPet=getOwnedPetByUid(btPet.uid);
+      if(ownedPet){ownedPet.exp+=Math.floor(expReward);while(ownedPet.exp>=ownedPet.level*EXP_PER_LEVEL){ownedPet.exp-=ownedPet.level*EXP_PER_LEVEL;ownedPet.level++}}
+    });
+
+    updateQuestProgress('q_battle',1);
+    updateQuestProgress('q_stage',1);
+    addMessage('通过 '+stageCfg.name+'! '+stars+'星评价','#ffd700','celebration');
+    if(isFirst)addMessage('首次通关! 💎+'+diamondBonus,'#5ac8fa','diamond');
+    addMessage('🔮进化石 +'+stoneReward+' 🪙金币 +'+goldReward,'#c77dff','gold');
+    playSound('stage_clear');
+    saveState();
+  }else{
+    // Wave cleared - show transition
+    bs.phase='wave_cleared';bs.animTimer=0;
+    bs.log.push('✨ 第'+(bs.currentWave+1)+'波 通过！');
+    // Recovery: 20% max HP for alive pets
+    bs.playerTeam.filter(p=>p.alive).forEach(p=>{p.hp=Math.min(p.maxHp,Math.floor(p.hp+p.maxHp*0.2))});
+  }
+}
+
+function proceedToWave(){
+  const bs=state.battleState;
+  if(!bs||bs.mode!=='stage')return;
+  bs.currentWave++;
+  if(bs.currentWave>=bs.totalWaves){bs.currentWave=bs.totalWaves-1;return}
+
+  if(bs.currentWave>=bs.bossWaveIdx){
+    // Boss wave incoming
+    bs.phase='boss_warning';bs.animTimer=0;
+    bs.enemies=bs.waves[bs.currentWave];
+    bs.log.push('⚠️ BOSS来袭！'+bs.stageCfg.boss.name+' 出现了！');
+  }else{
+    bs.phase='player_turn';bs.animTimer=0;bs.turn=1;
+    bs.enemies=bs.waves[bs.currentWave];
+    bs.actionCount=0;bs.animTimer=0;bs.acting=false;
+    bs.log.push('--- 第'+(bs.currentWave+1)+'波 第1回合 ---');
+  }
+}
+
+let battleButtons=[];
+function renderBattle(frame){
+  if(!state.battleState){state.screen='hub';return}
+  const bs=state.battleState;battleButtons=[];updateBattle();
+
+  if(bs.mode==='stage'){
+    // Stage battle background
+    const stageBg=bs.stageCfg.bg;
+    const bgGrad=ctx.createLinearGradient(0,0,0,H);
+    bgGrad.addColorStop(0,stageBg);bgGrad.addColorStop(1,adjustColor(stageBg,-30));
+    ctx.fillStyle=bgGrad;ctx.fillRect(0,0,W,H);
+  }else{ctx.fillStyle='#1a1a2e';ctx.fillRect(0,0,W,H)}
+
+  // Boss warning overlay
+  if(bs.phase==='boss_warning'){
+    const alpha=Math.min(1,bs.animTimer/30);
+    ctx.fillStyle=`rgba(180,0,0,${alpha*0.7})`;ctx.fillRect(0,0,W,H);
+    const scale=1+Math.sin(bs.animTimer*0.15)*0.1;
+    ctx.save();ctx.translate(W/2,200);ctx.scale(scale,scale);
+    ctx.fillStyle='#fff';ctx.font='bold 32px "PingFang SC","Microsoft YaHei",sans-serif';ctx.textAlign='center';
+    ctx.fillText('⚠️ BOSS 来袭!',0,0);
+    ctx.fillStyle='#ffd700';ctx.font='bold 20px "PingFang SC","Microsoft YaHei",sans-serif';
+    ctx.fillText(bs.stageCfg.boss.name,0,35);
+    ctx.restore();
+    if(bs.animTimer>30)drawPetOnCanvas(ctx,W/2,300,60,bs.stageCfg.boss.id,bs.waves[bs.bossWaveIdx][0]?.element||'DARK',bs.waves[bs.bossWaveIdx][0]?.cfg?.rarity||'SR',frame);
+    return;
+  }
+
+  // Wave cleared overlay
+  if(bs.phase==='wave_cleared'){
+    const alpha=Math.min(1,bs.animTimer/20);
+    ctx.fillStyle=`rgba(0,200,100,${alpha*0.3})`;ctx.fillRect(0,0,W,H);
+    ctx.fillStyle='#fff';ctx.font='bold 26px "PingFang SC","Microsoft YaHei",sans-serif';ctx.textAlign='center';
+    ctx.fillText('✨ 第'+(bs.currentWave+1)+'波 通过!',W/2,280);
+    ctx.fillStyle='#4cd964';ctx.font='14px "PingFang SC","Microsoft YaHei",sans-serif';
+    ctx.fillText('萌宠恢复20%生命值',W/2,310);
+    if(bs.currentWave+1>=bs.bossWaveIdx){
+      ctx.fillStyle='#ff4444';ctx.font='bold 16px "PingFang SC","Microsoft YaHei",sans-serif';
+      ctx.fillText('BOSS战即将开始...',W/2,340);
+    }
+    return;
+  }
+
+  // Header
+  if(bs.mode==='stage'){
+    ctx.fillStyle='#fff';ctx.font='bold 16px "PingFang SC","Microsoft YaHei",sans-serif';ctx.textAlign='center';
+    ctx.fillText('🏰 '+bs.stageCfg.name,W/2,25);
+    const waveLabel=bs.currentWave>=bs.bossWaveIdx?'BOSS':(bs.currentWave+1)+'/'+bs.totalWaves;
+    ctx.fillStyle='#ffd700';ctx.font='11px "PingFang SC","Microsoft YaHei",sans-serif';
+    ctx.fillText('第'+waveLabel+'波 | 回合'+bs.turn,W/2,40);
+  }else{
+    ctx.fillStyle='#ff5252';ctx.font='bold 16px "PingFang SC","Microsoft YaHei",sans-serif';ctx.textAlign='center';
+    ctx.fillText('⚔️ 自由战斗',W/2,25);
+    ctx.fillStyle='#aaa';ctx.font='11px "PingFang SC","Microsoft YaHei",sans-serif';
+    ctx.fillText('第'+bs.turn+'回合',W/2,40);
+  }
+
+  // Enemy area
+  const alivesEnemy=getAliveEnemies();alivesEnemy.forEach((enemy,i)=>{
+    const ex=55+(i%4)*98,ey=65+Math.floor(i/4)*85;
+    // Boss glow
+    if(enemy.isBoss){ctx.shadowColor='rgba(255,0,0,0.5)';ctx.shadowBlur=15+Math.sin(frame*0.08)*6}
+    drawPetOnCanvas(ctx,ex,ey,19,enemy.id,enemy.element,enemy.cfg.rarity,frame);
+    ctx.shadowColor='transparent';
+    // Boss name in special color
+    if(enemy.isBoss){ctx.fillStyle='#FF4500';ctx.shadowColor='rgba(255,69,0,0.4)';ctx.shadowBlur=4}
+    else ctx.fillStyle='#fff';
+    const hpPct=enemy.hp/enemy.maxHp;
+    ctx.fillStyle='#333';roundRect(ex-25,ey-22,50,5,2.5);ctx.fill();
+    ctx.fillStyle=hpPct>0.5?'#4cd964':hpPct>0.25?'#ffaa00':'#ff4444';
+    roundRect(ex-25,ey-22,50*hpPct,5,2.5);ctx.fill();
+    ctx.fillStyle=enemy.isBoss?'#FF4500':'#fff';ctx.font='9px sans-serif';ctx.textAlign='center';
+    ctx.fillText(enemy.name+(enemy.isBoss?' 👑':''),ex,ey+27);
+    ctx.fillText(enemy.hp+'/'+enemy.maxHp,ex,ey+38);
+    ctx.shadowColor='transparent';ctx.shadowBlur=0;
+  });
+
+  // Divider
+  ctx.strokeStyle='rgba(255,255,255,0.25)';ctx.lineWidth=1;ctx.setLineDash([6,3]);
+  ctx.beginPath();ctx.moveTo(20,220);ctx.lineTo(W-20,220);ctx.stroke();ctx.setLineDash([]);
+
+  // Player area
+  const alivesPlayer=getAliveTeam(bs.playerTeam);alivesPlayer.forEach((pet,i)=>{
+    const px=55+(i%4)*98,py=260+Math.floor(i/4)*85;
+    drawPetOnCanvas(ctx,px,py,21,pet.id,pet.element,pet.cfg.rarity,frame);
+    const hpPct=pet.hp/pet.maxHp;
+    ctx.fillStyle='#333';roundRect(px-25,py-22,50,5,2.5);ctx.fill();
+    ctx.fillStyle=hpPct>0.5?'#4cd964':hpPct>0.25?'#ffaa00':'#ff4444';
+    roundRect(px-25,py-22,50*hpPct,5,2.5);ctx.fill();
+    ctx.fillStyle='#fff';ctx.font='9px sans-serif';ctx.textAlign='center';
+    ctx.fillText(pet.name,px,py+27);ctx.fillText(pet.hp+'/'+pet.maxHp,px,py+38);
+  });
+
+  // Damage numbers
+  bs.damageNumbers.forEach(dn=>{
+    ctx.fillStyle=`rgba(${dn.color==='#ff4444'?'255,68,68':'255,170,0'},${dn.alpha})`;
+    ctx.font='bold 14px sans-serif';ctx.textAlign='center';
+    ctx.fillText('-'+dn.val,dn.x+Math.sin(dn.life*0.1)*10,dn.y);
+  });
+
+  // Battle log
+  const logY=430;ctx.fillStyle='rgba(0,0,0,0.5)';roundRect(12,logY,W-24,180,10);ctx.fill();
+  ctx.fillStyle='#ddd';ctx.font='bold 11px sans-serif';ctx.textAlign='left';ctx.fillText('📜 战斗日志',22,logY+16);
+  ctx.fillStyle='#aaa';ctx.font='9px sans-serif';
+  const recentLogs=bs.log.slice(-10);recentLogs.forEach((log,i)=>{ctx.fillText(log,22,logY+32+i*13)});
+
+  // Victory/Defeat overlay
+  if(bs.phase==='victory'){
+    bs.animTimer++;const alpha=Math.min(1,bs.animTimer/35);
+    ctx.fillStyle=`rgba(0,0,0,${alpha*0.75})`;ctx.fillRect(0,0,W,H);
+
+    if(bs.mode==='stage'){
+      // Stage settlement
+      ctx.fillStyle='#ffd700';ctx.font='bold 30px "PingFang SC","Microsoft YaHei",sans-serif';ctx.textAlign='center';
+      ctx.fillText('🏆 关卡通关!',W/2,160);
+      const stars=bs.rewards.stars||1;
+      ctx.fillStyle='#ffd700';ctx.font='28px sans-serif';
+      ctx.fillText('★'.repeat(stars)+'☆'.repeat(3-stars),W/2,200);
+      ctx.fillStyle='#fff';ctx.font='14px sans-serif';
+      ctx.fillText(bs.stageCfg.name+' '+stars+'星评价',W/2,230);
+      if(bs.rewards.isFirst)ctx.fillText('🎉 首次通关! 💎+'+bs.rewards.diamond,W/2,250);
+      ctx.fillStyle='#ffd700';ctx.font='13px sans-serif';
+      ctx.fillText('🪙 +'+bs.rewards.gold+'  ✨ +'+bs.rewards.exp+'  🔮 +'+bs.rewards.stones,W/2,275);
+      drawButton(W/2-60,300,120,40,'确 定','#4cd964','#fff',16);
+      battleButtons=[{x:W/2-60,y:300,w:120,h:40,action:'battle_done'}];
+    }else{
+      ctx.fillStyle='#ffd700';ctx.font='bold 28px sans-serif';ctx.textAlign='center';ctx.fillText('🎉 战斗胜利!',W/2,260);
+      ctx.fillStyle='#fff';ctx.font='14px sans-serif';ctx.fillText('🪙+'+bs.rewards.gold+' | ✨+'+bs.rewards.exp,W/2,295);
+      drawButton(W/2-60,320,120,40,'确 定','#4cd964','#fff',16);
+      battleButtons=[{x:W/2-60,y:320,w:120,h:40,action:'battle_done'}];
+    }
+  }else if(bs.phase==='defeat'){
+    bs.animTimer++;const alpha=Math.min(1,bs.animTimer/35);
+    ctx.fillStyle=`rgba(0,0,0,${alpha*0.75})`;ctx.fillRect(0,0,W,H);
+    ctx.fillStyle='#ff5252';ctx.font='bold 28px sans-serif';ctx.textAlign='center';
+    ctx.fillText('💔 '+(bs.mode==='stage'?'关卡挑战失败':'战斗失败'),W/2,260);
+    ctx.fillStyle='#fff';ctx.font='14px sans-serif';
+    ctx.fillText(bs.mode==='stage'?'萌宠恢复至战前状态':'提升实力再来挑战吧！',W/2,295);
+    drawButton(W/2-60,320,120,40,'确 定','#ff5252','#fff',16);
+    battleButtons=[{x:W/2-60,y:320,w:120,h:40,action:'battle_done'}];
+  }
+}
+
+function finishBattle(victory){
+  const bs=state.battleState;
+  if(victory){
+    if(bs.mode==='normal'){
+      state.gold+=bs.rewards.gold;
+      bs.playerTeam.filter(p=>p.alive).forEach(btPet=>{
+        const ownedPet=getOwnedPetByUid(btPet.uid);
+        if(ownedPet){ownedPet.exp+=Math.floor(bs.rewards.exp);while(ownedPet.exp>=ownedPet.level*EXP_PER_LEVEL){ownedPet.exp-=ownedPet.level*EXP_PER_LEVEL;ownedPet.level++}}
+      });
+      if(Math.random()<0.3)state.diamond++;
+      addMessage('战斗胜利！获得'+bs.rewards.gold+'金币和'+bs.rewards.exp+'经验！','#4cd964','success');
+    }
+    // Stage rewards handled in handleStageWaveEnd
+  }else{
+    // Restore pre-battle HP for stage
+    if(bs.mode==='stage'&&bs.preBattleHp){
+      bs.preBattleHp.forEach(pre=>{
+        const pet=getOwnedPetByUid(pre.uid);if(pet){} // No persistent HP change needed
+      });
+    }
+    addMessage(bs.mode==='stage'?'关卡挑战失败，提升实力再来吧！':'战斗失败，提升实力再来吧！','#ff5252','error');
+  }
+  state.battleState=null;state.screen='hub';saveState();
+}
+
+// ==================== EVOLUTION ANIMATION ====================
+function renderEvolutionAnimation(frame){
+  if(!state.evolutionAnim)return;
+  const ea=state.evolutionAnim;
+  if(ea.phase==='start'){
+    ea.timer++;
+    const pet=getOwnedPetByUid(ea.petUid);
+    // Full screen flash effect
+    const flashAlpha=Math.sin(ea.timer*0.15)*0.5+0.5;
+    ctx.fillStyle=`rgba(255,235,200,${flashAlpha*0.6})`;ctx.fillRect(0,0,W,H);
+
+    ctx.fillStyle='#fff';ctx.font='bold 24px "PingFang SC","Microsoft YaHei",sans-serif';ctx.textAlign='center';
+    ctx.fillText('⚡ 进化中... ⚡',W/2,H/2-60);
+
+    // Evolving pet with glow
+    if(pet){
+      const cfg=getPetConfig(pet.id);
+      ctx.shadowColor='rgba(255,200,50,0.8)';ctx.shadowBlur=20+Math.sin(ea.timer*0.2)*10;
+      drawPetOnCanvas(ctx,W/2,H/2-10,55+Math.sin(ea.timer*0.15)*8,ea.oldId,cfg.element,cfg.rarity,frame);
+      ctx.shadowColor='transparent';ctx.shadowBlur=0;
+    }
+
+    ctx.fillStyle='#c77dff';ctx.font='18px "PingFang SC","Microsoft YaHei",sans-serif';ctx.textAlign='center';
+    ctx.fillText(ea.oldName+' → '+ea.newName,W/2,H/2+80);
+
+    if(ea.timer>80){ea.phase='done';ea.timer=0}
+  }else if(ea.phase==='done'){
+    ea.timer++;
+    const newCfg=getPetConfig(ea.newId);
+    const scale=Math.min(1,ea.timer/25);
+    ctx.fillStyle='#1a1a2e';ctx.fillRect(0,0,W,H);
+
+    ctx.save();ctx.translate(W/2,H/2-20);ctx.scale(scale,scale);
+    ctx.shadowColor='rgba(255,215,0,0.8)';ctx.shadowBlur=25;
+    drawPetOnCanvas(ctx,0,0,55,ea.newId,newCfg.element,newCfg.rarity,frame);
+    ctx.shadowColor='transparent';ctx.shadowBlur=0;ctx.restore();
+
+    ctx.fillStyle='#ffd700';ctx.font='bold 26px "PingFang SC","Microsoft YaHei",sans-serif';ctx.textAlign='center';
+    ctx.fillText('🌟 进化完成! 🌟',W/2,H/2+60);
+    ctx.fillStyle='#fff';ctx.font='18px "PingFang SC","Microsoft YaHei",sans-serif';
+    ctx.fillText(ea.newName+' ('+RARITY_NAMES[ea.newRarity]+')',W/2,H/2+90);
+
+    if(ea.timer>60){
+      completeEvolution();
+    }
+  }
+}
+
+// ==================== MODAL SYSTEM ====================
+let modalButtons=[];
+function renderModal(){
+  if(!state.modal)return;
+  const m=state.modal;
+  ctx.fillStyle='rgba(0,0,0,0.5)';ctx.fillRect(0,0,W,H);
+  const mx=40,my=260,mw=W-80,mh=180;
+  ctx.fillStyle='#fff';roundRect(mx,my,mw,mh,20);ctx.fill();
+  ctx.shadowColor='rgba(0,0,0,0.2)';ctx.shadowBlur=20;ctx.fill();ctx.shadowColor='transparent';
+
+  if(m.type==='synthesis_confirm'){
+    ctx.fillStyle='#333';ctx.font='bold 18px sans-serif';ctx.textAlign='center';ctx.fillText('确认合成',W/2,my+35);
+    ctx.fillStyle='#666';ctx.font='13px sans-serif';ctx.fillText('消耗3只 '+m.sourceName+' → '+RARITY_NAMES[m.targetRarity]+' '+m.targetName,W/2,my+70);
+    ctx.fillText('合成后原萌宠将消失',W/2,my+88);
+    drawButton(mx+30,my+mh-50,mw/2-45,36,'取消','#aaa','#fff',13);
+    drawButton(mx+mw/2+15,my+mh-50,mw/2-45,36,'确认合成','#56ccf2','#fff',13);
+    modalButtons=[{x:mx+30,y:my+mh-50,w:mw/2-45,h:36,action:'modal_cancel'},{x:mx+mw/2+15,y:my+mh-50,w:mw/2-45,h:36,action:'modal_confirm'}];
+  }else if(m.type==='evo_confirm'){
+    ctx.fillStyle='#333';ctx.font='bold 18px sans-serif';ctx.textAlign='center';ctx.fillText('确认进化',W/2,my+35);
+    ctx.fillStyle='#666';ctx.font='13px sans-serif';ctx.fillText(m.petName+' → '+m.targetName+' ('+RARITY_NAMES[m.targetRarity]+')',W/2,my+65);
+    ctx.fillText('消耗 🔮进化石 x'+m.stoneCost+' | 当前: '+state.evolutionStones,W/2,my+85);
+    drawButton(mx+30,my+mh-50,mw/2-45,36,'取消','#aaa','#fff',13);
+    drawButton(mx+mw/2+15,my+mh-50,mw/2-45,36,'确认进化','#c77dff','#fff',13);
+    modalButtons=[{x:mx+30,y:my+mh-50,w:mw/2-45,h:36,action:'modal_cancel'},{x:mx+mw/2+15,y:my+mh-50,w:mw/2-45,h:36,action:'modal_confirm'}];
+  }
+}
+
+// ==================== SCREEN TRANSITION ====================
+function switchScreen(screen){
+  if(state.screen===screen)return;
+  state.prevScreen=state.screen;state.screen=screen;state.screenTransition=15;playSound('click');
+}
+
+function drawTransition(){
+  if(state.screenTransition>0){
+    const alpha=state.screenTransition/15;
+    ctx.fillStyle=`rgba(255,255,255,${alpha*0.5})`;ctx.fillRect(0,0,W,H);
+    state.screenTransition--;
+  }
+}
+
+// ==================== MAIN RENDER LOOP ====================
+let frame=0;
+function render(){
+  frame++;
+  ctx.clearRect(0,0,W,H);
+  checkDailyReset();
+  // Update permanent collection quests
+  if(frame%60===0)QUEST_CONFIGS.filter(q=>q.id.startsWith('q_collect_')).forEach(q=>{updateQuestProgress(q.id,0);if(q.id==='q_collect_10')updateQuestProgress('q_collect_25',0);if(q.id==='q_collect_25')updateQuestProgress('q_collect_10',0)});
+
+  // Render based on screen
+  if(state.evolutionAnim){renderEvolutionAnimation(frame)}
+  else{
+    switch(state.screen){
+      case 'hub':renderHub(frame);break;
+      case 'adventure_map':renderAdventureMap(frame);break;
+      case 'pokedex':renderPokedex(frame);break;
+      case 'pokedex_detail':renderPokedexDetail(frame);break;
+      case 'gacha':renderGacha(frame);break;
+      case 'synthesis':renderSynthesis(frame);break;
+      case 'battle':renderBattle(frame);break;
+      case 'quests':renderQuests(frame);break;
+    }
+  }
+
+  if(state.modal&&!state.evolutionAnim)renderModal();
+  drawTransition();
+  // Draw notification toasts
+  if (state.messages && state.messages.length > 0) {
+    state.messages = state.messages.filter(m => { m.timer--; return m.timer > 0; });
+    const sysInfo = wx.getSystemInfoSync();
+    const dpr = sysInfo.pixelRatio || 1;
+    state.messages.forEach((m, i) => {
+      const alpha = Math.min(1, m.timer / 30);
+      ctx.save();
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.globalAlpha = alpha;
+      ctx.fillStyle = '#fff';
+      ctx.font = (12 * dpr) + 'px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillStyle = m.color;
+      ctx.fillText(m.text, canvas.width / 2, (30 + i * 32) * dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      ctx.globalAlpha = 1;
+      ctx.restore();
+    });
+  }
+  showSaveIndicator();
+  canvas.requestAnimationFrame(render);
+}
+
+// ==================== INPUT HANDLER ====================
+function getClickTargets(){
+  let btns=[];
+  switch(state.screen){
+    case 'hub':btns=hubButtons;break;
+    case 'adventure_map':btns=advMapButtons;break;
+    case 'pokedex':if(state.subScreen!=='detail')btns=pokedexButtons;break;
+    case 'pokedex_detail':btns=pokedexButtons;break;
+    case 'gacha':btns=gachaButtons;break;
+    case 'synthesis':btns=synthesisButtons;break;
+    case 'battle':btns=battleButtons;break;
+    case 'quests':btns=questButtons;break;
+  }
+  if(state.modal)btns=[...btns,...modalButtons];
+  return btns;
+}
+
+// click handled via touch
+
+// scroll handled via touch
+
+// touch handled in WXML
+// touch handled in WXML
+// touch handled in WXML
+
+function handleAction(action){
+  initAudio();
+  if(action==='back'){
+    if(state.screen==='pokedex_detail'){state.screen='pokedex';state.subScreen=null;state.selectedPetUid=null}
+    else if(state.screen==='pokedex'){state.screen='hub';state.subScreen=null;pokedexScroll=0}
+    else if(state.screen==='quests'){state.screen='hub'}
+    else{state.screen='hub';state.subScreen=null}
+    state.modal=null;saveState();return;
+  }
+
+  if(state.modal){
+    if(action==='modal_cancel'){state.modal=null}
+    else if(action==='modal_confirm'){
+      if(state.modal.type==='synthesis_confirm')confirmSynthesis();
+      else if(state.modal.type==='evo_confirm')evolvePet(state.modal.petUid);
+    }
+    return;
+  }
+
+  if(action==='pokedex'){state.screen='pokedex';state.subScreen=null;pokedexScroll=0;state.selectedPetUid=null}
+  else if(action==='gacha'){state.screen='gacha';gachaResults=[];gachaAnimPhase=0;gachaAnimTimer=0}
+  else if(action==='synthesis'){state.screen='synthesis';synthScroll=0}
+  else if(action==='battle'){initBattle()}
+  else if(action==='adventure_map'){state.screen='adventure_map'}
+  else if(action==='open_quests'){state.screen='quests'}
+  else if(action==='quick_battle'){const stage=getHighestUnlockedStage();if(stage&&!state.unlockedStages[stage.id])initStageBattle(stage.id);else initBattle()}
+  else if(action.startsWith('select_stage_')){const sid=action.replace('select_stage_','');const stageCfg=STAGE_CONFIGS.find(s=>s.id===sid);if(stageCfg){if(!state.unlockedStages[sid]){const idx=STAGE_CONFIGS.indexOf(stageCfg);if(idx>0&&!state.unlockedStages[STAGE_CONFIGS[idx-1].id]){addMessage('请先通关前一关卡！','#ff4444','error');playSound('error');return}if(getTeamAvgLevel()<stageCfg.unlockLevel){addMessage('队伍平均等级不足Lv.'+stageCfg.unlockLevel,'#ff4444','error');playSound('error');return}}initStageBattle(sid)}}
+  else if(action.startsWith('gacha_1'))doGacha(1);
+  else if(action.startsWith('gacha_10'))doGacha(10);
+  else if(action.startsWith('gacha_done')){state.screen='hub';gachaResults=[];gachaAnimPhase=0;saveState()}
+  else if(action.startsWith('detail_')){const uid=action.replace('detail_','');state.selectedPetUid=uid;state.screen='pokedex_detail';state.subScreen='detail';state.modal=null}
+  else if(action.startsWith('toggle_team_')){
+    const uid=action.replace('toggle_team_','');
+    if(state.team.includes(uid)){state.team=state.team.filter(t=>t!==uid);const pet=getOwnedPetByUid(uid);if(pet)pet.isInTeam=false}
+    else{if(state.team.length>=MAX_TEAM_SIZE){addMessage('队伍已满！最多6只萌宠出战','#ff4444','error');playSound('error');return}state.team.push(uid);const pet=getOwnedPetByUid(uid);if(pet)pet.isInTeam=true}
+    saveState();
+  }
+  else if(action.startsWith('filter_')){const rarity=action.replace('filter_','');if(rarity==='ALL'){state.subScreen=null;state.selectedPetUid=null}else{state.subScreen='pokedex_filter';state.selectedPetUid=rarity}pokedexScroll=0}
+  else if(action.startsWith('synth_'))doSynthesis(parseInt(action.replace('synth_','')));
+  else if(action.startsWith('evolve_')){
+    const uid=action.replace('evolve_','');const pet=getOwnedPetByUid(uid);if(!pet||!canEvolvePet(pet)){addMessage('进化条件不满足！','#ff4444','error');playSound('error');return}
+    const cfg=getPetConfig(pet.id);const evoCfg=getPetConfig(cfg.evolution);
+    state.modal={type:'evo_confirm',petUid:uid,petName:cfg.name,targetName:evoCfg.name,targetRarity:evoCfg.rarity,stoneCost:getEvolutionStoneCost(cfg.rarity)};
+  }
+  else if(action==='battle_done'){finishBattle(state.battleState?.phase==='victory')}
+  else if(action.startsWith('claim_quest_')){claimQuest(action.replace('claim_quest_',''))}
+}
+
+// ==================== START GAME ====================

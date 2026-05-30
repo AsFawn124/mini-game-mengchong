@@ -1,0 +1,14 @@
+{
+  "description": "萌宠大冒险 - 微信小程序版",
+  "packOptions": { "ignore": [], "include": [] },
+  "setting": {
+    "urlCheck": true, "es6": true, "enhance": true, "postcss": true,
+    "minified": true, "newFeature": false, "coverView": true,
+    "useMultiFrameRuntime": true, "useApiHook": true, "useApiHostProcess": true
+  },
+  "compileType": "miniprogram",
+  "libVersion": "3.5.0",
+  "appid": "wxfe2d6586f3b6169c",
+  "projectname": "pet-adventure",
+  "condition": {}
+}
